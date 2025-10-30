@@ -19,6 +19,36 @@ Fornecer uma plataforma integrada para:
 - **Mobile:** Expo (TypeScript)
 - **Backend:** Nest.js
 - **Infraestrutura:** Vercel + Fastify
+- **Banco de Dados:** Firebase Firestore (NoSQL)
+- **Autenticação:** Firebase Authentication
+- **Armazenamento de Arquivos:** Firebase Storage
+
+### 🔥 Firebase (Plano Gratuito - Spark)
+
+O projeto utiliza o Firebase no plano gratuito (Spark Plan), que não requer cartão de crédito e oferece:
+
+**Firestore Database:**
+- 1 GB de armazenamento
+- 50.000 leituras/dia
+- 20.000 escritas/dia
+- 20.000 exclusões/dia
+
+**Firebase Authentication:**
+- Autenticação ilimitada
+- Suporte a múltiplos provedores (Email/Senha, Google, etc.)
+- Gerenciamento de usuários e permissões
+
+**Firebase Storage:**
+- 5 GB de armazenamento
+- 1 GB/dia de transferência de download
+- 20.000 uploads/dia
+
+**Funcionalidades utilizadas:**
+- Gerenciamento de usuários e autenticação
+- Armazenamento de dados de indivíduos, ocorrências e veículos
+- Upload de anexos (fotos, documentos, evidências)
+- Controle de acesso baseado em regras de segurança
+- Sincronização em tempo real entre plataformas web e mobile
 
 ## 🔐 Níveis de Acesso
 
