@@ -1,116 +1,182 @@
-# ETZ
+# ETZ - Sistema de Inteligência para Segurança Pública
 
+## 📋 Sobre o Projeto
 
-Front web: Next js
+Sistema de assessoramento em Segurança Pública desenvolvido para auxiliar forças policiais no gerenciamento e análise de informações de abordagens, indivíduos, ocorrências e veículos. Uma ferramenta completa de inteligência policial com foco em análise de vínculos e correlação de dados criminais.
 
-Mobile Expo (typescript)
+## 🎯 Objetivo
 
-Backend Nest.js 
+Fornecer uma plataforma integrada para:
+- Registro e gerenciamento de informações de abordagens policiais
+- Análise de vínculos entre indivíduos, crimes e organizações criminosas
+- Geração de relatórios e insights estratégicos
+- Visualização interativa de redes criminosas
+- Suporte à tomada de decisões operacionais e estratégicas
 
-Vercel + fastfy
-Melhore este readme.
+## 🛠️ Stack Tecnológica
 
-Foco do sistema : acessoramento na Segurança pública. 
+- **Frontend Web:** Next.js
+- **Mobile:** Expo (TypeScript)
+- **Backend:** Nest.js
+- **Infraestrutura:** Vercel + Fastify
 
-A ideia é inserir e gerenciar informações de abordagens policiais feitas por eles mesmos. Eles registram informações sobre indivíduos, fatos ocorridos, veículos. cada modulo desses três são informações. 
+## 🔐 Níveis de Acesso
 
-No cadastro de indivíduos, pode-se ter essas informações:
-Informações Básicas
-Nome Completo *
-Insira o nome completo
-Data de Nascimento
-dd/mm/aaaa
-Nome do Pai
-Nome do pai
-Nome da Mãe
-Nome da mãe
-Gênero
-Selecione o gênero
+### 1. Acesso Institucional
+Sistema hierárquico para instituições com múltiplos níveis:
 
-Estado Civil
-Selecione o estado civil
+- **Líder (Nível Estratégico)**
+  - Acesso completo ao sistema
+  - Visualização de dashboards e insights
+  - Capacidade de inserção e gestão de dados
+  - Visão geral de todas as operações
 
-Nacionalidade
-Insira a nacionalidade
-Área de Atuação
-Área de atuação
-Apelidos
-Adicionar Apelido
-Descrição
-Descrição geral do indivíduo...
-Números de Documentos
-CPF
-000.000.000-00
-RG
-Insira o número do RG
-Passaporte
-Insira o número do passaporte
-Informações de Contato
-Telefones
-Adicionar Telefone
-E-mails
-Adicionar E-mail
-Endereços
-Adicionar Endereço
-Informações Criminais
-Tipo de Vínculo
-Selecione o tipo de vínculo
+- **Analista (Nível Tático)**
+  - Análise de dados e vínculos
+  - Consulta completa aos dados
+  - Geração de relatórios e insights
+  - Correlação de informações
 
-Veículos
+- **Agente de Campo / Policial Operacional**
+  - Inserção de novos dados
+  - Acesso restrito aos dados que inseriu
+  - Registro de abordagens e ocorrências
 
-Possui Mandado de Prisão
-Crimes
-Adicionar Crime
-Informações Penitenciárias
-Pavilhão
-Pavilhão
-Ala
-Ala
-Cela
-Cela
-Status Prisional
-Em Liberdade
+### 2. Acesso Equipe
+Estrutura simplificada para equipes menores com os mesmos níveis de permissão.
 
-Análise de Risco
-Status
-Investigado
+### 3. Acesso Pessoal
+Acesso individual com todas as funcionalidades disponíveis.
 
-Nível de Risco
-Baixo
+## 📊 Módulos do Sistema
 
-Nível de Acesso
-Operador
+### Dashboard
+Visão geral com estatísticas, métricas e insights principais do sistema.
 
-Notas de Inteligência
-Insira observações e notas de inteligência...
-Anexos
-Carregar Documentos
+### QTC (Quadro de Transmissão de Conhecimento)
+Módulo para registro de novas informações:
+- Registros avulsos de novidades
+- Menção a organizações criminosas
+- Referência a indivíduos e veículos
+- Anotações operacionais
 
+### Indivíduos
+Cadastro completo de pessoas de interesse com:
 
-Lembrando que pode-se tanto inserir, editar, excluir, etc.
+#### Informações Básicas
+- Nome completo (obrigatório)
+- Data de nascimento
+- Filiação (nome do pai e mãe)
+- Gênero
+- Estado civil 
+- Conjuge
+- Filhos
+- Nacionalidade
+- Área de atuação
+- Tatuagens/Marcas
+- Apelidos/Alcunhas
+- Descrição geral
+- Veículos relacionados
 
-a ideia é organizar o máximo de informações sobre criminosos, orcrim, etc.
+#### Documentos
+- CPF
+- RG
+- Passaporte
 
-Eu quero que esse sistema sirva de análise de vínculos, de forma que se possa lincar indivíduos a crimes, fraudes, sequestros, organizações criminosas, uma ferramenta de inteligência.
+#### Contatos
+- Telefones (múltiplos)
+- E-mails (múltiplos)
+- Endereços (múltiplos)
 
+#### Informações Criminais
+- Rostos
+- Tipo de vínculo (Familiar, Profissional,Criminal, Social, outro )
+- Organizações
+- Mandados de prisão (Número, mais informações)
+- Crimes associados
+- Pessoas Vinculadas
 
-Seria dividida em acessos:
-Acesso Institucional (cadastrado como instituição, com vários líderes, vários analistas, vários agentes de campo/policial do dia a dia).
-Acesso Equipe (acesso para o líder - nível estratégico que tem todos os acessos, visualizando principalmente o dashboard, a parte de insights, mas pode também fazer inserção, esse é o mais completo, o analista no nível tático que pode fazer a análise dos dados, fazer vínculos, consultar todos os dados, fornecer relatórios, insigts, o indivíduo que está na rua puxando informações - que é o agente de campo ou o policial do dia a dia, mais restrito aos dados que o usuário dele insere e podendo inserir novos dados). 
+#### Informações Penitenciárias
+- Pavilhão
+- Ala
+- Cela
+- Status prisional
 
-Acesso Pessoal (uma única pessoa com todos os acessos).
+#### Análise de Risco
+- Status (Investigado, Suspeito, etc.)
+- Nível de risco (Baixo, Médio, Alto)
+- Nível de acesso
+- Notas de inteligência
 
+#### Anexos
+- Upload de documentos
+- Fotos
+- Evidências
 
-Quero que tenha os seguintes menus:
+**Funcionalidades:** Adicionar, visualizar, editar, excluir e pesquisar indivíduos.
 
-Dashboard
-QTC (um modulo só para registro de novas informações (podendo mencionar organização criminal, indivíduo, veículos etc).
-Indivíduos (podendo adicionar, visualizar, editar, excluir), pesquisar, etc.
-Relatórios 
-Dados (aqui aparece uma lista de todos os indivíduos cadastrados - dependendo do nível de acesso), podendo exportar (planilha, pdf)
-Análise ( uma interface interativa que correlacione criminosos) - Visualização de rede de entidades (node-link diagram) para análise de vínculos, podendo editar de forma que já resulte diretamente na base de dados.
+### Relatórios
 
-Para o super usuário, aparece logs de auditoria, gestão de usuários (podendo editar os níveis de acesso, fornecer acesso, linkar a uma estrutura pai/filho (indivíduo à equipe ou à instituição), o status dos usuários, excluir, etc)
+#### Dados
+- Listagem completa de indivíduos cadastrados
+- Filtros por nível de acesso
+- Exportação em múltiplos formatos:
+  - Planilha Excel
+  - CSV
+  - PDF
 
+#### Análise
+Interface interativa para análise de vínculos:
+- Visualização de rede de entidades (Node-Link Diagram)
+- Correlação entre criminosos
+- Edição em tempo real com sincronização no banco de dados
+- Identificação de padrões e conexões
+- Análise de organizações criminosas
 
-outra coisa extremamente importante é a segurança. 
+### Administração (Super Usuário)
+
+**Contas disponíveis:**
+- Usuário Tester
+- Usuário ADM
+
+**Funcionalidades administrativas:**
+- Logs de auditoria completos
+- Gestão de usuários
+  - Edição de níveis de acesso
+  - Concessão e revogação de permissões
+  - Estrutura hierárquica (pai/filho)
+  - Vinculação a equipes ou instituições
+  - Gerenciamento de status
+  - Exclusão de usuários
+
+## 🔒 Segurança
+
+A segurança é uma prioridade crítica do sistema, incluindo:
+- Autenticação robusta
+- Controle de acesso baseado em funções (RBAC)
+- Criptografia de dados sensíveis
+- Logs de auditoria
+- Trilhas de auditoria para todas as operações
+- Conformidade com LGPD e normas de proteção de dados
+
+## 🚀 Funcionalidades Principais
+
+- ✅ Gerenciamento completo de indivíduos
+- ✅ Registro de abordagens e ocorrências
+- ✅ Análise de vínculos criminais
+- ✅ Visualização de redes criminosas
+- ✅ Geração de relatórios customizados
+- ✅ Dashboard com insights estratégicos
+- ✅ Sistema de permissões hierárquico
+- ✅ Logs de auditoria completos
+- ✅ Exportação de dados em múltiplos formatos
+- ✅ Interface mobile para operações em campo
+
+## 📱 Plataformas
+
+- **Web:** Interface completa para análise e gestão
+- **Mobile:** App nativo para registro em campo
+
+---
+
+**Nota:** Sistema desenvolvido para uso exclusivo de forças de segurança pública autorizadas. 
