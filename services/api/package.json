@@ -1,0 +1,12 @@
+{
+  "name": "@etz/api",
+  "version": "0.0.1",
+  "description": "ETZ backend API (NestJS — future)",
+  "main": "./src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

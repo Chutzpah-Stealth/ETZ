@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "products/*"
+  - "services/*"
+  - "data-plataform"
+  - "ai"
+  - "infrastructure"

@@ -1,0 +1,14 @@
+{
+  "name": "etz",
+  "private": true,
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "^5"
+  }
+}

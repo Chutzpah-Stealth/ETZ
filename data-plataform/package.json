@@ -1,0 +1,10 @@
+{
+  "name": "@etz/data-plataform",
+  "version": "0.0.1",
+  "description": "ETZ data platform — pipelines, ingestion, and data processing",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

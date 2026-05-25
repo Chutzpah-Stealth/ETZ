@@ -1,0 +1,13 @@
+{
+  "name": "@etz/security",
+  "version": "0.0.1",
+  "description": "Shared security: auth, audit, classification, encryption, permissions, guards, middleware, logging, policies, validators",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

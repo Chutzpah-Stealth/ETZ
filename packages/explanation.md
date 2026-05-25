@@ -1,0 +1,1 @@
+Aqui ficará o core compartilhado.

@@ -1,0 +1,13 @@
+{
+  "name": "@etz/utils",
+  "version": "0.0.1",
+  "description": "Generic helpers, formatters, and validators",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

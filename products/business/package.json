@@ -1,0 +1,13 @@
+{
+  "name": "@etz/business",
+  "version": "0.0.1",
+  "description": "ETZ Business product logic and configuration",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
