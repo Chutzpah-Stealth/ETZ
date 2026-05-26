@@ -1,11 +1,26 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ETZLogoMark } from "../../components/ETZLogo";
 import { signOut } from "../../../lib/auth";
+import { auth } from "../../../lib/firebase";
+import { db } from "../../../lib/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function DashboardPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) return;
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists() && snap.data()?.role === "superadmin") {
+        router.replace("/admin");
+      }
+    });
+    return unsubscribe;
+  }, [router]);
 
   async function handleSignOut() {
     await signOut();
