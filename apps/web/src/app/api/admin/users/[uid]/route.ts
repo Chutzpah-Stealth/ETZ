@@ -10,12 +10,51 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ui
   const body = await req.json();
   const { role, institutionId, unitId, status, displayName } = body;
 
+  const userSnap = await adminDb.collection("users").doc(uid).get();
+  const userData = userSnap.data();
+  const isSuperadmin = userData?.role === "superadmin" || role === "superadmin";
+
+  if (isSuperadmin) {
+    // Superadmins gerenciam todos os produtos e instituições — não podem ser vinculados a nenhuma
+    if (institutionId !== undefined || unitId !== undefined) {
+      return NextResponse.json(
+        { error: "Superadmins não são vinculados a instituições ou unidades" },
+        { status: 400 }
+      );
+    }
+  } else {
+    // product é imutável — rejeitar qualquer tentativa de alteração
+    if ("product" in body) {
+      return NextResponse.json({ error: "O produto de um usuário não pode ser alterado após a criação" }, { status: 400 });
+    }
+
+    // Se está trocando de instituição, garantir que o produto não mude
+    if (institutionId !== undefined) {
+      const newInstSnap = await adminDb.collection("institutions").doc(institutionId).get();
+      const currentProduct = userData?.product ?? null;
+      const newProduct = newInstSnap.data()?.product ?? null;
+      if (currentProduct && newProduct && currentProduct !== newProduct) {
+        return NextResponse.json(
+          { error: "Não é possível mover um usuário para uma instituição de produto diferente" },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
   if (role)         updates.role         = role;
   if (institutionId !== undefined) updates.institutionId = institutionId;
   if (unitId !== undefined)        updates.unitId        = unitId;
   if (status)       updates.status       = status;
   if (displayName)  updates.displayName  = displayName;
+
+  // Promoção para superadmin: zerar vínculos de produto/instituição/unidade
+  if (role === "superadmin") {
+    updates.product       = null;
+    updates.institutionId = null;
+    updates.unitId        = null;
+  }
 
   await adminDb.collection("users").doc(uid).update(updates);
 
@@ -24,6 +63,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ui
     const data = snap.data()!;
     await adminAuth.setCustomUserClaims(uid, {
       role:          data.role,
+      product:       data.product ?? null,
       institutionId: data.institutionId,
       unitId:        data.unitId,
     });
