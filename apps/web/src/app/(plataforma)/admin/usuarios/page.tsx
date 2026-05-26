@@ -6,17 +6,31 @@ import { auth, app } from "../../../../lib/firebase";
 import { db } from "../../../../lib/firestore";
 import type { UserProfile, Institution } from "@etz/shared-types/src/users";
 
-const ROLES = [
+const DEFENSE_ROLES = [
   { value: "gestor",       label: "Gestor"          },
   { value: "analista",     label: "Analista"         },
   { value: "agente_campo", label: "Agente de Campo"  },
 ];
 
+const BUSINESS_ROLES = [
+  { value: "c_level",             label: "C-Level"             },
+  { value: "compliance_officer",  label: "Compliance Officer"  },
+  { value: "analista_risco",      label: "Analista de Risco"   },
+];
+
 const ROLE_LABEL: Record<string, string> = {
-  superadmin:   "Super Admin",
-  gestor:       "Gestor",
-  analista:     "Analista",
-  agente_campo: "Agente de Campo",
+  superadmin:           "Super Admin",
+  gestor:               "Gestor",
+  analista:             "Analista",
+  agente_campo:         "Agente de Campo",
+  c_level:              "C-Level",
+  compliance_officer:   "Compliance Officer",
+  analista_risco:       "Analista de Risco",
+};
+
+const PRODUCT_LABEL: Record<string, string> = {
+  defense: "ETZ Defense",
+  business: "ETZ Business",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -42,6 +56,9 @@ export default function UsuariosPage() {
     email: "", password: "", displayName: "", role: "analista",
     institutionId: "", unitId: "",
   });
+
+  const selectedInstProduct = institutions.find(i => i.id === form.institutionId)?.product ?? "defense";
+  const availableRoles = selectedInstProduct === "business" ? BUSINESS_ROLES : DEFENSE_ROLES;
 
   const loadData = useCallback(async () => {
     const [usersSnap, instSnap] = await Promise.all([
@@ -127,7 +144,7 @@ export default function UsuariosPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--paper-2)" }}>
-                {["Nome", "E-mail", "Papel", "Instituição / Unidade", "Status", "Ações"].map(h => (
+                {["Nome", "E-mail", "Produto", "Papel", "Instituição / Unidade", "Status", "Ações"].map(h => (
                   <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</th>
                 ))}
               </tr>
@@ -142,6 +159,9 @@ export default function UsuariosPage() {
                   <tr key={user.uid} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
                     <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{user.displayName || "—"}</td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)" }}>{user.email}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>
+                      {user.product ? PRODUCT_LABEL[user.product] ?? user.product : "—"}
+                    </td>
                     <td style={{ padding: "12px 16px" }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
                         {ROLE_LABEL[user.role] ?? user.role}
@@ -214,27 +234,36 @@ export default function UsuariosPage() {
               ))}
 
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Papel</label>
-                <select
-                  value={form.role}
-                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                  style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
-                >
-                  {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Instituição</label>
                 <select
                   value={form.institutionId}
-                  onChange={e => setForm(f => ({ ...f, institutionId: e.target.value, unitId: "" }))}
+                  onChange={e => {
+                    const instId = e.target.value;
+                    const prod = institutions.find(i => i.id === instId)?.product ?? "defense";
+                    const defaultRole = prod === "business" ? "analista_risco" : "analista";
+                    setForm(f => ({ ...f, institutionId: instId, unitId: "", role: defaultRole }));
+                  }}
                   style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
                 >
                   <option value="">— Selecionar —</option>
                   {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                 </select>
               </div>
+
+              {form.institutionId && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Papel</label>
+                  <select
+                    value={form.role}
+                    onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                    style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
+                  >
+                    {availableRoles.map(r => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {form.institutionId && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
