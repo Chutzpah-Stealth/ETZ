@@ -45,7 +45,7 @@ export default function AuditoriaPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--paper-2)" }}>
-                {["Data / Hora", "Usuário", "Ação", "Tipo", "ID do Alvo"].map(h => (
+                {["Data / Hora", "Usuário", "Ação", "Tipo", "ID do Registro"].map(h => (
                   <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
