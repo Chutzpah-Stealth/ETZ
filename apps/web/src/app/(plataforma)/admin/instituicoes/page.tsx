@@ -18,10 +18,11 @@ export default function InstituicoesPage() {
   const [institutions, setInstitutions] = useState<InstitutionWithUnits[]>([]);
   const [showInstModal, setShowInstModal] = useState(false);
   const [showUnitModal, setShowUnitModal] = useState<string | null>(null); // institutionId
-  const [instName, setInstName]   = useState("");
-  const [unitName, setUnitName]   = useState("");
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
+  const [instName, setInstName]       = useState("");
+  const [instProduct, setInstProduct] = useState<"defense" | "business">("defense");
+  const [unitName, setUnitName]       = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState("");
 
   const loadData = useCallback(async () => {
     const instSnap = await getDocs(collection(db, "institutions"));
@@ -44,10 +45,10 @@ export default function InstituicoesPage() {
       const res = await fetch("/api/admin/institutions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: instName }),
+        body: JSON.stringify({ name: instName, product: instProduct }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-      setShowInstModal(false); setInstName("");
+      setShowInstModal(false); setInstName(""); setInstProduct("defense");
       await loadData();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro");
@@ -99,7 +100,12 @@ export default function InstituicoesPage() {
             <div key={inst.id} style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
               <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{inst.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{inst.name}</p>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 10px", letterSpacing: "0.05em" }}>
+                      {inst.product === "business" ? "Business" : "Defense"}
+                    </span>
+                  </div>
                   <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{inst.units.length} unidade{inst.units.length !== 1 ? "s" : ""}</p>
                 </div>
                 <button
@@ -138,6 +144,16 @@ export default function InstituicoesPage() {
                 placeholder="Ex: PCSP — Polícia Civil de São Paulo"
                 style={inputStyle}
               />
+            </Field>
+            <Field label="Produto">
+              <select
+                value={instProduct}
+                onChange={e => setInstProduct(e.target.value as "defense" | "business")}
+                style={inputStyle}
+              >
+                <option value="defense">ETZ Defense</option>
+                <option value="business">ETZ Business</option>
+              </select>
             </Field>
             {error && <ErrorMsg>{error}</ErrorMsg>}
             <ModalActions loading={loading} onCancel={() => { setShowInstModal(false); setError(""); }} label="Criar Instituição" />
