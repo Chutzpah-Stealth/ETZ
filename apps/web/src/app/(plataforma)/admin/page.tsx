@@ -12,11 +12,17 @@ interface Stats {
   activeUsers: number;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  superadmin:    "Super Admin",
-  gestor:        "Gestor",
-  analista:      "Analista",
-  agente_campo:  "Agente de Campo",
+const TARGET_TYPE_LABEL: Record<string, string> = {
+  user:        "Usuário",
+  institution: "Instituição",
+  unit:        "Unidade",
+  target:      "Perfil",
+  case:        "Caso",
+};
+
+const PRODUCT_LABEL: Record<string, string> = {
+  defense:  "ETZ Defense",
+  business: "ETZ Business",
 };
 
 export default function AdminOverviewPage() {
@@ -97,7 +103,7 @@ export default function AdminOverviewPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--paper-2)" }}>
-                {["Ação", "Usuário", "Alvo", "Data"].map(h => (
+                {["Ação", "Usuário", "Recurso", "Data"].map(h => (
                   <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</th>
                 ))}
               </tr>
@@ -107,7 +113,23 @@ export default function AdminOverviewPage() {
                 <tr key={log.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
                   <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink)", fontWeight: 500 }}>{log.action}</td>
                   <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)" }}>{log.userEmail}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>{log.targetId.slice(0, 12)}…</td>
+                  <td style={{ padding: "12px 16px" }}>
+                    {(() => {
+                      const product = (log.details?.product ?? "") as string;
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>
+                            {TARGET_TYPE_LABEL[log.targetType] ?? log.targetType}
+                          </span>
+                          {product && (
+                            <span style={{ fontSize: 11, color: "var(--blue)" }}>
+                              {PRODUCT_LABEL[product] ?? product}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{new Date(log.timestamp).toLocaleString("pt-BR")}</td>
                 </tr>
               ))}
