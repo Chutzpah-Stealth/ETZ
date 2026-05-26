@@ -17,8 +17,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .collection("units")
     .add({ name, institutionId, status: "active", createdAt: now });
 
-  const callerSnap = await adminDb.collection("users").doc(check.uid).get();
-  await writeAuditLog(check.uid, callerSnap.data()?.email ?? "", "create_unit", "unit", docRef.id, { name, institutionId });
+  const [callerSnap, instSnap] = await Promise.all([
+    adminDb.collection("users").doc(check.uid).get(),
+    adminDb.collection("institutions").doc(institutionId).get(),
+  ]);
+  const product = instSnap.data()?.product ?? null;
+  await writeAuditLog(check.uid, callerSnap.data()?.email ?? "", "create_unit", "unit", docRef.id, { name, institutionId, product });
 
   return NextResponse.json({ id: docRef.id }, { status: 201 });
 }
