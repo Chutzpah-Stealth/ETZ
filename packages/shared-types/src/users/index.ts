@@ -1,4 +1,9 @@
-export type UserRole = "superadmin" | "gestor" | "analista" | "agente_campo";
+export type UserProduct = "defense" | "business";
+
+export type DefenseRole = "superadmin" | "gestor" | "analista" | "agente_campo";
+export type BusinessRole = "superadmin" | "c_level" | "compliance_officer" | "analista_risco";
+export type UserRole = DefenseRole | BusinessRole;
+
 export type UserStatus = "active" | "revoked";
 export type InstitutionStatus = "active" | "inactive";
 
@@ -7,6 +12,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: UserRole;
+  product: UserProduct | null;
   institutionId: string | null;
   unitId: string | null;
   status: UserStatus;
@@ -17,6 +23,7 @@ export interface UserProfile {
 export interface Institution {
   id: string;
   name: string;
+  product: UserProduct;
   status: InstitutionStatus;
   createdAt: string;
   createdBy: string;
