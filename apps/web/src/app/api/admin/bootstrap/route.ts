@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     email: decoded.email ?? "",
     displayName: decoded.name ?? decoded.email ?? "",
     role: "superadmin",
+    product: null,
     institutionId: null,
     unitId: null,
     status: "active",
