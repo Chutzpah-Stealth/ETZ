@@ -15,8 +15,12 @@ export default function DashboardPage() {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (!user) return;
       const snap = await getDoc(doc(db, "users", user.uid));
-      if (snap.exists() && snap.data()?.role === "superadmin") {
+      if (!snap.exists()) return;
+      const role = snap.data()?.role;
+      if (role === "superadmin") {
         router.replace("/admin");
+      } else if (["gestor", "analista", "agente_campo"].includes(role)) {
+        router.replace("/alvos");
       }
     });
     return unsubscribe;
