@@ -10,32 +10,18 @@ const ArrowLeft = () => (
 );
 
 const navConfig = {
-  hub: {
-    label: "ETZ Intelligence",
-    href: "/",
-    back: false,
-    links: [] as string[],
-    cta: null as string | null,
-  },
   defense: {
     label: "ETZ Defense",
     href: "/defense",
-    back: true,
+    back: false,
     links: ["Produto", "Segurança", "Acesso"],
-    cta: "Falar com Especialista",
-  },
-  business: {
-    label: "ETZ Business",
-    href: "/business",
-    back: true,
-    links: ["Produto", "Segurança", "Planos"],
     cta: "Falar com Especialista",
   },
 };
 
-type NavVariant = "hub" | "defense" | "business";
+type NavVariant = "defense";
 
-export default function Nav({ variant = "hub" }: { variant?: NavVariant }) {
+export default function Nav({ variant = "defense" }: { variant?: NavVariant }) {
   const [scrolled, setScrolled] = useState(false);
   const config = navConfig[variant];
 
@@ -112,7 +98,7 @@ export default function Nav({ variant = "hub" }: { variant?: NavVariant }) {
                 ETZ
               </span>
               <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", color: "var(--muted)", textTransform: "uppercase" }}>
-                {variant === "hub" ? "Intelligence" : variant === "defense" ? "Defense" : "Business"}
+                Defense
               </span>
             </span>
           </a>

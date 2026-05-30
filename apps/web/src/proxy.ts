@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const APP_ROUTES = ["/login", "/dashboard"];
 
 // Rotas que pertencem ao site de marketing (etz.com)
-const MARKETING_ROUTES = ["/", "/defense", "/business"];
+const MARKETING_ROUTES = ["/", "/defense"];
 
 export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";

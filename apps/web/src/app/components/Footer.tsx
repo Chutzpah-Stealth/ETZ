@@ -1,12 +1,8 @@
 import { ETZLogoMark } from "./ETZLogo";
 
-const disclaimers = {
-  hub:      "Plataforma modular de inteligência de dados.",
-  defense:  "Uso exclusivo de forças de segurança pública.",
-  business: "Inteligência corporativa para empresas de médio e grande porte.",
-};
+const disclaimer = "Uso exclusivo de forças de segurança pública.";
 
-export default function Footer({ variant = "defense" }: { variant?: "hub" | "defense" | "business" }) {
+export default function Footer({ variant = "defense" }: { variant?: "defense" }) {
   return (
     <footer
       style={{
@@ -50,7 +46,7 @@ export default function Footer({ variant = "defense" }: { variant?: "hub" | "def
             lineHeight: 1.6,
           }}
         >
-          {disclaimers[variant]}
+          {disclaimer}
         </p>
 
         {/* Right — signature */}
