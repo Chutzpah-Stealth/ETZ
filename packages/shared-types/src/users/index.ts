@@ -1,8 +1,7 @@
-export type UserProduct = "defense" | "business";
+export type UserProduct = "defense";
 
 export type DefenseRole = "superadmin" | "gestor" | "analista" | "agente_campo";
-export type BusinessRole = "superadmin" | "c_level" | "compliance_officer" | "analista_risco";
-export type UserRole = DefenseRole | BusinessRole;
+export type UserRole = DefenseRole;
 
 export type UserStatus = "active" | "revoked";
 export type InstitutionStatus = "active" | "inactive";
