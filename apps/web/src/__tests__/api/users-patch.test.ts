@@ -58,17 +58,7 @@ describe("PATCH /api/admin/users/[uid]", () => {
     expect(body.error).toMatch(/produto.*não pode ser alterado/i);
   });
 
-  it("retorna 400 ao mover usuário para instituição de produto diferente", async () => {
-    mockUserGet.mockResolvedValue({ exists: true, data: () => ({ role: "analista", product: "defense" }) });
-    mockInstGet.mockResolvedValue({ exists: true, data: () => ({ product: "business" }) });
-
-    const res = await PATCH(makeReq("u1", { institutionId: "inst-business" }), { params: Promise.resolve({ uid: "u1" }) });
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/produto diferente/i);
-  });
-
-  it("permite mover para instituição do mesmo produto", async () => {
+  it("permite mover para instituição (mesmo produto defense)", async () => {
     mockUserGet
       .mockResolvedValueOnce({ exists: true, data: () => ({ role: "analista", product: "defense" }) })
       .mockResolvedValueOnce({ exists: true, data: () => ({ role: "analista", product: "defense", institutionId: "inst-defense-2", unitId: null }) });

@@ -36,25 +36,13 @@ beforeEach(() => {
 
 describe("POST /api/admin/institutions", () => {
   it("retorna 400 se name ausente", async () => {
-    const res = await POST(makeReq({ product: "defense" }));
+    const res = await POST(makeReq({}));
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "name é obrigatório" });
   });
 
-  it("retorna 400 se product ausente", async () => {
+  it("cria instituição com status active e product defense", async () => {
     const res = await POST(makeReq({ name: "PCSP" }));
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/product/);
-  });
-
-  it("retorna 400 se product inválido", async () => {
-    const res = await POST(makeReq({ name: "PCSP", product: "invalid" }));
-    expect(res.status).toBe(400);
-  });
-
-  it("cria instituição Defense com status active", async () => {
-    const res = await POST(makeReq({ name: "PCSP", product: "defense" }));
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ id: "inst-new" });
 
@@ -66,14 +54,8 @@ describe("POST /api/admin/institutions", () => {
     }));
   });
 
-  it("cria instituição Business", async () => {
-    const res = await POST(makeReq({ name: "Empresa SA", product: "business" }));
-    expect(res.status).toBe(201);
-    expect(mockInstAdd).toHaveBeenCalledWith(expect.objectContaining({ product: "business" }));
-  });
-
   it("grava audit log com details.product", async () => {
-    await POST(makeReq({ name: "PMSP", product: "defense" }));
+    await POST(makeReq({ name: "PMSP" }));
     expect(mockAuditAdd).toHaveBeenCalledWith(expect.objectContaining({
       action: "create_institution",
       details: expect.objectContaining({ name: "PMSP", product: "defense" }),

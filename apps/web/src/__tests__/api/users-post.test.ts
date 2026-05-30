@@ -86,17 +86,6 @@ describe("POST /api/admin/users", () => {
     expect(mockUsersSet).toHaveBeenCalledWith(expect.objectContaining({ product: "defense" }));
   });
 
-  it("cria usuário Business com product derivado da instituição", async () => {
-    mockInstGet.mockResolvedValue({ exists: true, data: () => ({ product: "business" }) });
-    mockCreateUser.mockResolvedValue({ uid: "newuser2" });
-    mockSetCustomUserClaims.mockResolvedValue(undefined);
-
-    const res = await POST(makeReq({ email: "b@b.com", password: "123456", role: "c_level", institutionId: "inst-business" }));
-    expect(res.status).toBe(201);
-
-    expect(mockUsersSet).toHaveBeenCalledWith(expect.objectContaining({ product: "business" }));
-  });
-
   it("ignora product enviado no body — usa produto da instituição", async () => {
     mockInstGet.mockResolvedValue({ exists: true, data: () => ({ product: "defense" }) });
     mockCreateUser.mockResolvedValue({ uid: "newuser3" });
