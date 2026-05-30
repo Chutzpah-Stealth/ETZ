@@ -7,6 +7,7 @@ const config: Config = {
     "^.+\\.tsx?$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.json" }],
   },
   moduleNameMapper: {
+    "^@etz/shared-types$": "<rootDir>/../../packages/shared-types/src/index.ts",
     "^@etz/shared-types/(.*)$": "<rootDir>/../../packages/shared-types/src/$1",
   },
 };
