@@ -2,35 +2,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { auth, app } from "../../../../lib/firebase";
+import { auth } from "../../../../lib/firebase";
 import { db } from "../../../../lib/firestore";
-import type { UserProfile, Institution } from "@etz/shared-types/src/users";
+import type { UserProfile, Institution } from "@etz/shared-types";
 
-const DEFENSE_ROLES = [
+const AVAILABLE_ROLES = [
   { value: "gestor",       label: "Gestor"          },
   { value: "analista",     label: "Analista"         },
   { value: "agente_campo", label: "Agente de Campo"  },
 ];
 
-const BUSINESS_ROLES = [
-  { value: "c_level",             label: "C-Level"             },
-  { value: "compliance_officer",  label: "Compliance Officer"  },
-  { value: "analista_risco",      label: "Analista de Risco"   },
-];
-
 const ROLE_LABEL: Record<string, string> = {
-  superadmin:           "Super Admin",
-  gestor:               "Gestor",
-  analista:             "Analista",
-  agente_campo:         "Agente de Campo",
-  c_level:              "C-Level",
-  compliance_officer:   "Compliance Officer",
-  analista_risco:       "Analista de Risco",
-};
-
-const PRODUCT_LABEL: Record<string, string> = {
-  defense: "ETZ Defense",
-  business: "ETZ Business",
+  superadmin:   "Super Admin",
+  gestor:       "Gestor",
+  analista:     "Analista",
+  agente_campo: "Agente de Campo",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -56,9 +42,6 @@ export default function UsuariosPage() {
     email: "", password: "", displayName: "", role: "analista",
     institutionId: "", unitId: "",
   });
-
-  const selectedInstProduct = institutions.find(i => i.id === form.institutionId)?.product ?? "defense";
-  const availableRoles = selectedInstProduct === "business" ? BUSINESS_ROLES : DEFENSE_ROLES;
 
   const loadData = useCallback(async () => {
     const [usersSnap, instSnap] = await Promise.all([
@@ -141,65 +124,129 @@ export default function UsuariosPage() {
         {users.length === 0 ? (
           <p style={{ padding: 24, fontSize: 14, color: "var(--muted)" }}>Nenhum usuário cadastrado.</p>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "var(--paper-2)" }}>
-                {["Nome", "E-mail", "Produto", "Papel", "Instituição / Unidade", "Status", "Ações"].map(h => (
-                  <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Desktop table */}
+            <table className="audit-table">
+              <thead>
+                <tr style={{ background: "var(--paper-2)" }}>
+                  {["Nome", "E-mail", "Papel", "Instituição / Unidade", "Status", "Ações"].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user, i) => {
+                  const instName = institutions.find(x => x.id === user.institutionId)?.name ?? "—";
+                  const unitName = user.institutionId && user.unitId
+                    ? (units[user.institutionId]?.find(u => u.id === user.unitId)?.name ?? "—")
+                    : "—";
+                  return (
+                    <tr key={user.uid} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
+                      <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{user.displayName || "—"}</td>
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)" }}>{user.email}</td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
+                          {ROLE_LABEL[user.role] ?? user.role}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{instName} / {unitName}</td>
+                      <td style={{ padding: "12px 16px" }}>
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px",
+                          color: user.status === "active" ? "#1a6e3c" : "#c0392b",
+                          background: user.status === "active" ? "#edf7f1" : "#fdf2f1",
+                        }}>
+                          {STATUS_LABEL[user.status]}
+                        </span>
+                      </td>
+                      <td style={{ padding: "12px 16px", display: "flex", gap: 8 }}>
+                        {user.role !== "superadmin" && (
+                          <>
+                            <button
+                              onClick={() => handleToggleStatus(user)}
+                              style={{ fontSize: 12, color: "var(--muted)", background: "none", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
+                            >
+                              {user.status === "active" ? "Revogar" : "Reativar"}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.uid)}
+                              style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
+                            >
+                              Excluir
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Mobile cards */}
+            <div className="audit-cards">
               {users.map((user, i) => {
-                const instName = institutions.find(x => x.id === user.institutionId)?.name ?? "—";
+                const instName = institutions.find(x => x.id === user.institutionId)?.name ?? null;
                 const unitName = user.institutionId && user.unitId
-                  ? (units[user.institutionId]?.find(u => u.id === user.unitId)?.name ?? "—")
-                  : "—";
+                  ? (units[user.institutionId]?.find(u => u.id === user.unitId)?.name ?? null)
+                  : null;
                 return (
-                  <tr key={user.uid} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{user.displayName || "—"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)" }}>{user.email}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>
-                      {user.product ? PRODUCT_LABEL[user.product] ?? user.product : "—"}
-                    </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
-                        {ROLE_LABEL[user.role] ?? user.role}
-                      </span>
-                    </td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{instName} / {unitName}</td>
-                    <td style={{ padding: "12px 16px" }}>
+                  <div key={user.uid} style={{
+                    padding: "14px 16px",
+                    borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}>
+                    {/* Top row: name + status */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{user.displayName || "—"}</p>
+                        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>{user.email}</p>
+                      </div>
                       <span style={{
-                        fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px",
+                        fontSize: 10, fontWeight: 600, borderRadius: 999, padding: "3px 8px", flexShrink: 0,
                         color: user.status === "active" ? "#1a6e3c" : "#c0392b",
                         background: user.status === "active" ? "#edf7f1" : "#fdf2f1",
                       }}>
                         {STATUS_LABEL[user.status]}
                       </span>
-                    </td>
-                    <td style={{ padding: "12px 16px", display: "flex", gap: 8 }}>
-                      {user.role !== "superadmin" && (
-                        <>
-                          <button
-                            onClick={() => handleToggleStatus(user)}
-                            style={{ fontSize: 12, color: "var(--muted)", background: "none", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
-                          >
-                            {user.status === "active" ? "Revogar" : "Reativar"}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.uid)}
-                            style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
-                          >
-                            Excluir
-                          </button>
-                        </>
+                    </div>
+
+                    {/* Badges row */}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 8px" }}>
+                        {ROLE_LABEL[user.role] ?? user.role}
+                      </span>
+                      {instName && (
+                        <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                          {instName}{unitName ? ` / ${unitName}` : ""}
+                        </span>
                       )}
-                    </td>
-                  </tr>
+                    </div>
+
+                    {/* Actions */}
+                    {user.role !== "superadmin" && (
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          onClick={() => handleToggleStatus(user)}
+                          style={{ fontSize: 12, color: "var(--muted)", background: "none", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", padding: "5px 12px", cursor: "pointer" }}
+                        >
+                          {user.status === "active" ? "Revogar" : "Reativar"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.uid)}
+                          style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "5px 12px", cursor: "pointer" }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -208,10 +255,12 @@ export default function UsuariosPage() {
         <div style={{
           position: "fixed", inset: 0, background: "rgba(15,15,30,0.4)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
+          padding: "20px",
         }}>
           <div style={{
             background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)",
             padding: 32, width: "100%", maxWidth: 480, boxShadow: "var(--shadow-lg)",
+            maxHeight: "90vh", overflowY: "auto",
           }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 24 }}>
               Novo Usuário
@@ -239,9 +288,7 @@ export default function UsuariosPage() {
                   value={form.institutionId}
                   onChange={e => {
                     const instId = e.target.value;
-                    const prod = institutions.find(i => i.id === instId)?.product ?? "defense";
-                    const defaultRole = prod === "business" ? "analista_risco" : "analista";
-                    setForm(f => ({ ...f, institutionId: instId, unitId: "", role: defaultRole }));
+                    setForm(f => ({ ...f, institutionId: instId, unitId: "", role: "analista" }));
                   }}
                   style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
                 >
@@ -258,7 +305,7 @@ export default function UsuariosPage() {
                     onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
                     style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
                   >
-                    {availableRoles.map(r => (
+                    {AVAILABLE_ROLES.map(r => (
                       <option key={r.value} value={r.value}>{r.label}</option>
                     ))}
                   </select>

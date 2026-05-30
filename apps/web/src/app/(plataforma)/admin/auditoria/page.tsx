@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy, limit, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../../../lib/firestore";
-import type { AuditLog } from "@etz/shared-types/src/users";
+import type { AuditLog } from "@etz/shared-types";
 
 const PAGE_SIZE = 25;
 
@@ -42,34 +42,66 @@ export default function AuditoriaPage() {
         {logs.length === 0 && !loading ? (
           <p style={{ padding: 24, fontSize: 14, color: "var(--muted)" }}>Nenhum registro de auditoria encontrado.</p>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "var(--paper-2)" }}>
-                {["Data / Hora", "Usuário", "Ação", "Tipo", "ID do Registro"].map(h => (
-                  <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+          <>
+            {/* Desktop table */}
+            <table className="audit-table">
+              <thead>
+                <tr style={{ background: "var(--paper-2)" }}>
+                  {["Data / Hora", "Usuário", "Ação", "Tipo", "ID do Registro"].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log, i) => (
+                  <tr key={log.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                      {new Date(log.timestamp).toLocaleString("pt-BR")}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink)" }}>{log.userEmail}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{log.targetType}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
+                      {log.targetId.slice(0, 14)}…
+                    </td>
+                  </tr>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </tbody>
+            </table>
+
+            {/* Mobile cards */}
+            <div className="audit-cards">
               {logs.map((log, i) => (
-                <tr key={log.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
-                    {new Date(log.timestamp).toLocaleString("pt-BR")}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink)" }}>{log.userEmail}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
+                <div key={log.id} style={{
+                  padding: "14px 16px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 8px" }}>
                       {log.action}
                     </span>
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{log.targetType}</td>
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
-                    {log.targetId.slice(0, 14)}…
-                  </td>
-                </tr>
+                    <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {new Date(log.timestamp).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {log.userEmail}
+                  </p>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{log.targetType}</span>
+                    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>{log.targetId.slice(0, 10)}…</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 

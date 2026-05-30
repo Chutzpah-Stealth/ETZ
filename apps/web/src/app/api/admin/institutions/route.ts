@@ -21,11 +21,10 @@ export async function POST(req: NextRequest) {
   const check = await verifyAdmin(req);
   if (check instanceof NextResponse) return check;
 
-  const { name, product } = await req.json();
+  const { name } = await req.json();
   if (!name) return NextResponse.json({ error: "name é obrigatório" }, { status: 400 });
-  if (!product || !["defense", "business"].includes(product))
-    return NextResponse.json({ error: "product deve ser 'defense' ou 'business'" }, { status: 400 });
 
+  const product = "defense";
   const now = new Date().toISOString();
   const docRef = await adminDb.collection("institutions").add({
     name,
