@@ -33,5 +33,10 @@ service cloud.firestore {
       allow read: if isSuperadmin();
       allow write: if false;
     }
+
+    // Targets — leitura/escrita controlada pela API (Admin SDK); client não acessa diretamente
+    match /targets/{targetId} {
+      allow read, write: if false;
+    }
   }
 }
