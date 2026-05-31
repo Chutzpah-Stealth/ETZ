@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { auth } from "../../../../lib/firebase";
-import { db } from "../../../../lib/firestore";
+import { getToken } from "../../../../lib/auth";
 import type { UserProfile, Institution } from "@etz/shared-types";
 
 const AVAILABLE_ROLES = [
@@ -24,12 +22,6 @@ const STATUS_LABEL: Record<string, string> = {
   revoked: "Revogado",
 };
 
-async function getToken(): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-  return user.getIdToken();
-}
-
 export default function UsuariosPage() {
   const [users, setUsers]               = useState<UserProfile[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -44,19 +36,20 @@ export default function UsuariosPage() {
   });
 
   const loadData = useCallback(async () => {
-    const [usersSnap, instSnap] = await Promise.all([
-      getDocs(collection(db, "users")),
-      getDocs(collection(db, "institutions")),
+    const token = await getToken();
+    const [usersRes, instsRes] = await Promise.all([
+      fetch("/api/admin/users",        { headers: { Authorization: `Bearer ${token}` } }),
+      fetch("/api/admin/institutions", { headers: { Authorization: `Bearer ${token}` } }),
     ]);
-    setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as unknown as UserProfile)));
-    const insts = instSnap.docs.map(d => ({ id: d.id, ...d.data() } as unknown as Institution));
-    setInstitutions(insts);
+    const usersData: UserProfile[]   = await usersRes.json();
+    const instsData: Institution[]   = await instsRes.json();
+    setUsers(usersData);
+    setInstitutions(instsData);
 
     const unitsMap: Record<string, { id: string; name: string }[]> = {};
-    await Promise.all(insts.map(async (inst) => {
-      const snap = await getDocs(collection(db, `institutions/${inst.id}/units`));
-      unitsMap[inst.id] = snap.docs.map(u => ({ id: u.id, name: u.data().name }));
-    }));
+    for (const inst of instsData) {
+      unitsMap[inst.id] = (inst as Institution & { units?: { id: string; name: string }[] }).units ?? [];
+    }
     setUnits(unitsMap);
   }, []);
 
@@ -108,29 +101,28 @@ export default function UsuariosPage() {
     <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Usuários</h1>
+          <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
+          <h1>Usuários</h1>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="btn-primary"
-          style={{ padding: "10px 20px", fontSize: 13 }}
+          className="btn-primary btn-primary--sm"
         >
           + Novo Usuário
         </button>
       </div>
 
-      <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
         {users.length === 0 ? (
-          <p style={{ padding: 24, fontSize: 14, color: "var(--muted)" }}>Nenhum usuário cadastrado.</p>
+          <p style={{ padding: 24, fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum usuário cadastrado.</p>
         ) : (
           <>
             {/* Desktop table */}
             <table className="audit-table">
               <thead>
-                <tr style={{ background: "var(--paper-2)" }}>
+                <tr>
                   {["Nome", "E-mail", "Papel", "Instituição / Unidade", "Status", "Ações"].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase" }}>{h}</th>
+                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--ink-500)", textAlign: "left", letterSpacing: "0.09em", textTransform: "uppercase", background: "var(--surface-2)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -141,36 +133,40 @@ export default function UsuariosPage() {
                     ? (units[user.institutionId]?.find(u => u.id === user.unitId)?.name ?? "—")
                     : "—";
                   return (
-                    <tr key={user.uid} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
-                      <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{user.displayName || "—"}</td>
-                      <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)" }}>{user.email}</td>
+                    <tr key={user.uid}
+                      style={{ borderTop: i === 0 ? "none" : "1px solid var(--line)" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    >
+                      <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 600, color: "var(--ink-800)", fontFamily: "var(--font-ui)" }}>{user.displayName || "—"}</td>
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>{user.email}</td>
                       <td style={{ padding: "12px 16px" }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
+                        <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", background: "var(--accent-tint)", borderRadius: "var(--r-full)", padding: "3px 9px", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                           {ROLE_LABEL[user.role] ?? user.role}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{instName} / {unitName}</td>
+                      <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>{instName} / {unitName}</td>
                       <td style={{ padding: "12px 16px" }}>
                         <span style={{
-                          fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px",
-                          color: user.status === "active" ? "#1a6e3c" : "#c0392b",
-                          background: user.status === "active" ? "#edf7f1" : "#fdf2f1",
+                          fontSize: 11, fontWeight: 500, fontFamily: "var(--font-ui)", borderRadius: "var(--r-full)", padding: "3px 9px",
+                          color: user.status === "active" ? "var(--success)" : "var(--danger)",
+                          background: user.status === "active" ? "var(--success-tint)" : "var(--danger-tint)",
                         }}>
                           {STATUS_LABEL[user.status]}
                         </span>
                       </td>
-                      <td style={{ padding: "12px 16px", display: "flex", gap: 8 }}>
+                      <td style={{ padding: "12px 16px", display: "flex", gap: 6 }}>
                         {user.role !== "superadmin" && (
                           <>
                             <button
                               onClick={() => handleToggleStatus(user)}
-                              style={{ fontSize: 12, color: "var(--muted)", background: "none", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
+                              style={{ fontSize: 12, color: "var(--ink-600)", background: "none", border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", padding: "4px 10px", cursor: "pointer", fontFamily: "var(--font-ui)" }}
                             >
                               {user.status === "active" ? "Revogar" : "Reativar"}
                             </button>
                             <button
                               onClick={() => handleDelete(user.uid)}
-                              style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer" }}
+                              style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", padding: "4px 10px", cursor: "pointer", fontFamily: "var(--font-ui)" }}
                             >
                               Excluir
                             </button>
@@ -193,7 +189,7 @@ export default function UsuariosPage() {
                 return (
                   <div key={user.uid} style={{
                     padding: "14px 16px",
-                    borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)",
+                    borderTop: i === 0 ? "none" : "1px solid var(--line)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
@@ -201,13 +197,13 @@ export default function UsuariosPage() {
                     {/* Top row: name + status */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                       <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{user.displayName || "—"}</p>
-                        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>{user.email}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", fontFamily: "var(--font-ui)" }}>{user.displayName || "—"}</p>
+                        <p style={{ fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-mono)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>{user.email}</p>
                       </div>
                       <span style={{
-                        fontSize: 10, fontWeight: 600, borderRadius: 999, padding: "3px 8px", flexShrink: 0,
-                        color: user.status === "active" ? "#1a6e3c" : "#c0392b",
-                        background: user.status === "active" ? "#edf7f1" : "#fdf2f1",
+                        fontSize: 11, fontWeight: 500, fontFamily: "var(--font-ui)", borderRadius: "var(--r-full)", padding: "3px 8px", flexShrink: 0,
+                        color: user.status === "active" ? "var(--success)" : "var(--danger)",
+                        background: user.status === "active" ? "var(--success-tint)" : "var(--danger-tint)",
                       }}>
                         {STATUS_LABEL[user.status]}
                       </span>
@@ -215,11 +211,11 @@ export default function UsuariosPage() {
 
                     {/* Badges row */}
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 8px" }}>
+                      <span style={{ fontSize: 11, fontWeight: 500, fontFamily: "var(--font-mono)", color: "var(--accent)", background: "var(--accent-tint)", borderRadius: "var(--r-full)", padding: "2px 8px", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
                         {ROLE_LABEL[user.role] ?? user.role}
                       </span>
                       {instName && (
-                        <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>
                           {instName}{unitName ? ` / ${unitName}` : ""}
                         </span>
                       )}
@@ -230,13 +226,13 @@ export default function UsuariosPage() {
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           onClick={() => handleToggleStatus(user)}
-                          style={{ fontSize: 12, color: "var(--muted)", background: "none", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", padding: "5px 12px", cursor: "pointer" }}
+                          style={{ fontSize: 12, color: "var(--ink-600)", background: "none", border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", padding: "5px 12px", cursor: "pointer", fontFamily: "var(--font-ui)" }}
                         >
                           {user.status === "active" ? "Revogar" : "Reativar"}
                         </button>
                         <button
                           onClick={() => handleDelete(user.uid)}
-                          style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "5px 12px", cursor: "pointer" }}
+                          style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", padding: "5px 12px", cursor: "pointer", fontFamily: "var(--font-ui)" }}
                         >
                           Excluir
                         </button>
@@ -253,44 +249,44 @@ export default function UsuariosPage() {
       {/* Modal criar usuário */}
       {showModal && (
         <div style={{
-          position: "fixed", inset: 0, background: "rgba(15,15,30,0.4)",
+          position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
           padding: "20px",
         }}>
           <div style={{
-            background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)",
+            background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)",
             padding: 32, width: "100%", maxWidth: 480, boxShadow: "var(--shadow-lg)",
             maxHeight: "90vh", overflowY: "auto",
           }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 24 }}>
+            <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink-900)", marginBottom: 24 }}>
               Novo Usuário
             </h2>
             <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                { key: "displayName", label: "Nome completo", type: "text",     placeholder: "João Silva" },
+                { key: "displayName", label: "Nome Completo", type: "text",     placeholder: "João Silva" },
                 { key: "email",       label: "E-mail",        type: "email",    placeholder: "usuario@instituicao.gov.br" },
-                { key: "password",    label: "Senha inicial", type: "password", placeholder: "••••••••" },
+                { key: "password",    label: "Senha Inicial", type: "password", placeholder: "••••••••" },
               ].map(({ key, label, type, placeholder }) => (
-                <div key={key} style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</label>
+                <div key={key} className="form-field">
+                  <label className="form-label">{label}</label>
                   <input
                     type={type} required={key !== "displayName"} placeholder={placeholder}
                     value={form[key as keyof typeof form]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                    style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none", boxSizing: "border-box", width: "100%" }}
+                    className="form-input"
                   />
                 </div>
               ))}
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Instituição</label>
+              <div className="form-field">
+                <label className="form-label">Instituição</label>
                 <select
                   value={form.institutionId}
                   onChange={e => {
                     const instId = e.target.value;
                     setForm(f => ({ ...f, institutionId: instId, unitId: "", role: "analista" }));
                   }}
-                  style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
+                  className="form-input form-select"
                 >
                   <option value="">— Selecionar —</option>
                   {institutions.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
@@ -298,12 +294,12 @@ export default function UsuariosPage() {
               </div>
 
               {form.institutionId && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Papel</label>
+                <div className="form-field">
+                  <label className="form-label">Papel</label>
                   <select
                     value={form.role}
                     onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                    style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
+                    className="form-input form-select"
                   >
                     {AVAILABLE_ROLES.map(r => (
                       <option key={r.value} value={r.value}>{r.label}</option>
@@ -313,12 +309,12 @@ export default function UsuariosPage() {
               )}
 
               {form.institutionId && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Unidade</label>
+                <div className="form-field">
+                  <label className="form-label">Unidade</label>
                   <select
                     value={form.unitId}
                     onChange={e => setForm(f => ({ ...f, unitId: e.target.value }))}
-                    style={{ padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none" }}
+                    className="form-input form-select"
                   >
                     <option value="">— Selecionar —</option>
                     {(units[form.institutionId] ?? []).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
@@ -327,16 +323,17 @@ export default function UsuariosPage() {
               )}
 
               {error && (
-                <p style={{ fontSize: 13, color: "#c0392b", background: "#fdf2f1", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>{error}</p>
+                <p style={{ fontSize: 13, color: "var(--danger)", background: "var(--danger-tint)", border: "1px solid #f5c6c2", borderRadius: "var(--r-sm)", padding: "8px 12px", fontFamily: "var(--font-ui)" }}>{error}</p>
               )}
 
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-                <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, opacity: loading ? 0.7 : 1 }}>
+                <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, opacity: loading ? 0.7 : 1, justifyContent: "center" }}>
                   {loading ? "Criando…" : "Criar Usuário"}
                 </button>
                 <button
                   type="button" onClick={() => { setShowModal(false); setError(""); }}
-                  style={{ flex: 1, padding: "12px", fontSize: 14, fontWeight: 500, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 999, cursor: "pointer" }}
+                  className="btn-secondary"
+                  style={{ flex: 1, justifyContent: "center" }}
                 >
                   Cancelar
                 </button>

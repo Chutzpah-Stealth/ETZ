@@ -1,37 +1,26 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { auth } from "../../../../lib/firebase";
-import { db } from "../../../../lib/firestore";
+import { getToken } from "../../../../lib/auth";
 import type { Institution, Unit } from "@etz/shared-types";
 
 type InstitutionWithUnits = Institution & { units: Unit[] };
 
-async function getToken() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-  return user.getIdToken();
-}
-
 export default function InstituicoesPage() {
   const [institutions, setInstitutions] = useState<InstitutionWithUnits[]>([]);
   const [showInstModal, setShowInstModal] = useState(false);
-  const [showUnitModal, setShowUnitModal] = useState<string | null>(null); // institutionId
+  const [showUnitModal, setShowUnitModal] = useState<string | null>(null);
   const [instName, setInstName] = useState("");
   const [unitName, setUnitName] = useState("");
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState("");
 
   const loadData = useCallback(async () => {
-    const instSnap = await getDocs(collection(db, "institutions"));
-    const result: InstitutionWithUnits[] = [];
-    for (const d of instSnap.docs) {
-      const unitsSnap = await getDocs(collection(db, `institutions/${d.id}/units`));
-      const units = unitsSnap.docs.map(u => ({ id: u.id, ...u.data() } as unknown as Unit));
-      result.push({ id: d.id, ...d.data(), units } as InstitutionWithUnits);
-    }
-    setInstitutions(result);
+    const token = await getToken();
+    const res = await fetch("/api/admin/institutions", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) setInstitutions(await res.json());
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -81,38 +70,38 @@ export default function InstituicoesPage() {
     <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Instituições</h1>
+          <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
+          <h1>Instituições</h1>
         </div>
-        <button onClick={() => setShowInstModal(true)} className="btn-primary" style={{ padding: "10px 20px", fontSize: 13, flexShrink: 0 }}>
+        <button onClick={() => setShowInstModal(true)} className="btn-primary btn-primary--sm" style={{ flexShrink: 0 }}>
           + Nova
         </button>
       </div>
 
       {institutions.length === 0 ? (
-        <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", padding: 32, textAlign: "center" }}>
-          <p style={{ fontSize: 14, color: "var(--muted)" }}>Nenhuma instituição cadastrada.</p>
+        <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 32, textAlign: "center" }}>
+          <p style={{ fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhuma instituição cadastrada.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {institutions.map(inst => (
-            <div key={inst.id} style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+            <div key={inst.id} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-xs)" }}>
               {/* Institution header */}
-              <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--rule)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+              <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)" }}>{inst.name}</p>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 8px", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-800)", fontFamily: "var(--font-ui)" }}>{inst.name}</p>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", background: "var(--accent-tint)", borderRadius: "var(--r-full)", padding: "2px 8px", letterSpacing: "0.09em", whiteSpace: "nowrap", textTransform: "uppercase" }}>
                       Defense
                     </span>
                   </div>
-                  <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                  <p style={{ fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-ui)", marginTop: 2 }}>
                     {inst.units.length} unidade{inst.units.length !== 1 ? "s" : ""}
                   </p>
                 </div>
                 <button
                   onClick={() => { setShowUnitModal(inst.id); setError(""); }}
-                  style={{ fontSize: 12, fontWeight: 500, color: "var(--blue)", background: "var(--blue-soft)", border: "none", borderRadius: 999, padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+                  style={{ fontSize: 12, fontWeight: 500, fontFamily: "var(--font-ui)", color: "var(--accent)", background: "var(--accent-tint)", border: "none", borderRadius: "var(--r-sm)", padding: "6px 12px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, transition: "background var(--transition)" }}
                 >
                   + Unidade
                 </button>
@@ -121,9 +110,9 @@ export default function InstituicoesPage() {
                 <div style={{ padding: "12px 16px", display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {inst.units.map(unit => (
                     <span key={unit.id} style={{
-                      fontSize: 12, fontWeight: 500, color: "var(--ink)",
-                      background: "var(--paper-2)", border: "1px solid var(--rule)",
-                      borderRadius: 999, padding: "4px 12px",
+                      fontSize: 12, fontWeight: 500, fontFamily: "var(--font-ui)", color: "var(--ink-700)",
+                      background: "var(--surface-2)", border: "1px solid var(--line)",
+                      borderRadius: "var(--r-sm)", padding: "4px 12px",
                     }}>
                       {unit.name}
                     </span>
@@ -175,15 +164,16 @@ export default function InstituicoesPage() {
 }
 
 const inputStyle: React.CSSProperties = {
-  padding: "9px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)",
-  border: "1px solid var(--rule)", borderRadius: "var(--radius-md)", outline: "none",
-  boxSizing: "border-box", width: "100%",
+  height: 38, padding: "0 10px", fontSize: 13, color: "var(--ink-900)", background: "var(--surface)",
+  border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", outline: "none",
+  boxSizing: "border-box", width: "100%", fontFamily: "var(--font-ui)",
+  transition: "border-color var(--transition), box-shadow var(--transition)",
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>{label}</label>
+    <div className="form-field">
+      <label className="form-label">{label}</label>
       {children}
     </div>
   );
@@ -191,7 +181,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function ErrorMsg({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: 13, color: "#c0392b", background: "#fdf2f1", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "8px 12px" }}>
+    <p style={{ fontSize: 13, color: "var(--danger)", background: "var(--danger-tint)", border: "1px solid #f5c6c2", borderRadius: "var(--r-sm)", padding: "8px 12px", fontFamily: "var(--font-ui)" }}>
       {children}
     </p>
   );
@@ -200,10 +190,10 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
 function ModalActions({ loading, onCancel, label }: { loading: boolean; onCancel: () => void; label: string }) {
   return (
     <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-      <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, opacity: loading ? 0.7 : 1 }}>
+      <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, opacity: loading ? 0.7 : 1, justifyContent: "center" }}>
         {loading ? "Salvando…" : label}
       </button>
-      <button type="button" onClick={onCancel} style={{ flex: 1, padding: "12px", fontSize: 14, fontWeight: 500, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 999, cursor: "pointer" }}>
+      <button type="button" onClick={onCancel} className="btn-secondary" style={{ flex: 1, justifyContent: "center" }}>
         Cancelar
       </button>
     </div>
@@ -212,9 +202,9 @@ function ModalActions({ loading, onCancel, label }: { loading: boolean; onCancel
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,15,30,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "20px" }}>
-      <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", padding: 32, width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)", marginBottom: 24 }}>{title}</h2>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "20px" }}>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 32, width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)" }}>
+        <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink-900)", marginBottom: 24 }}>{title}</h2>
         {children}
       </div>
     </div>

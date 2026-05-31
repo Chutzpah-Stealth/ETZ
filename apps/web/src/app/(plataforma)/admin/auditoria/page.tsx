@@ -1,30 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy, limit, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
-import { db } from "../../../../lib/firestore";
+import { getToken } from "../../../../lib/auth";
 import type { AuditLog } from "@etz/shared-types";
 
-const PAGE_SIZE = 25;
-
 export default function AuditoriaPage() {
-  const [logs, setLogs]         = useState<AuditLog[]>([]);
-  const [lastDoc, setLastDoc]   = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore]   = useState(true);
-  const [loading, setLoading]   = useState(false);
+  const [logs, setLogs]           = useState<AuditLog[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore]     = useState(true);
+  const [loading, setLoading]     = useState(false);
 
-  async function loadMore(after?: QueryDocumentSnapshot) {
+  async function loadMore(after?: string) {
     setLoading(true);
-    const q = after
-      ? query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), startAfter(after), limit(PAGE_SIZE))
-      : query(collection(db, "audit_logs"), orderBy("timestamp", "desc"), limit(PAGE_SIZE));
+    const token = await getToken();
+    const url = after
+      ? `/api/admin/audit-logs?after=${encodeURIComponent(after)}`
+      : "/api/admin/audit-logs";
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { setLoading(false); return; }
+    const data = await res.json();
 
-    const snap = await getDocs(q);
-    const newLogs = snap.docs.map(d => ({ id: d.id, ...d.data() } as AuditLog));
-
-    setLogs(prev => after ? [...prev, ...newLogs] : newLogs);
-    setLastDoc(snap.docs[snap.docs.length - 1] ?? null);
-    setHasMore(snap.size === PAGE_SIZE);
+    setLogs(prev => after ? [...prev, ...data.logs] : data.logs);
+    setNextCursor(data.nextCursor);
+    setHasMore(data.hasMore);
     setLoading(false);
   }
 
@@ -33,39 +31,43 @@ export default function AuditoriaPage() {
   return (
     <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
-        <p style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
-        <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Auditoria</h1>
-        <p style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>Registro completo de todas as ações administrativas.</p>
+        <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
+        <h1>Auditoria</h1>
+        <p style={{ fontSize: 13, color: "var(--ink-500)", marginTop: 4, fontFamily: "var(--font-ui)" }}>Registro completo de todas as ações administrativas.</p>
       </div>
 
-      <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
         {logs.length === 0 && !loading ? (
-          <p style={{ padding: 24, fontSize: 14, color: "var(--muted)" }}>Nenhum registro de auditoria encontrado.</p>
+          <p style={{ padding: 24, fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum registro de auditoria encontrado.</p>
         ) : (
           <>
             {/* Desktop table */}
             <table className="audit-table">
               <thead>
-                <tr style={{ background: "var(--paper-2)" }}>
+                <tr>
                   {["Data / Hora", "Usuário", "Ação", "Tipo", "ID do Registro"].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--ink-500)", textAlign: "left", letterSpacing: "0.09em", textTransform: "uppercase", whiteSpace: "nowrap", background: "var(--surface-2)" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {logs.map((log, i) => (
-                  <tr key={log.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                  <tr key={log.id}
+                    style={{ borderTop: i === 0 ? "none" : "1px solid var(--line)" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-400)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
                       {new Date(log.timestamp).toLocaleString("pt-BR")}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink)" }}>{log.userEmail}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-600)", fontFamily: "var(--font-mono)" }}>{log.userEmail}</td>
                     <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "3px 10px" }}>
+                      <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", background: "var(--accent-tint)", borderRadius: "var(--r-full)", padding: "3px 9px", letterSpacing: "0.06em" }}>
                         {log.action}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)" }}>{log.targetType}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", fontFamily: "monospace" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>{log.targetType}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>
                       {log.targetId.slice(0, 14)}…
                     </td>
                   </tr>
@@ -78,25 +80,25 @@ export default function AuditoriaPage() {
               {logs.map((log, i) => (
                 <div key={log.id} style={{
                   padding: "14px 16px",
-                  borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)",
+                  borderTop: i === 0 ? "none" : "1px solid var(--line)",
                   display: "flex",
                   flexDirection: "column",
                   gap: 6,
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--blue)", background: "var(--blue-soft)", borderRadius: 999, padding: "2px 8px" }}>
+                    <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", background: "var(--accent-tint)", borderRadius: "var(--r-full)", padding: "2px 8px" }}>
                       {log.action}
                     </span>
-                    <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap", flexShrink: 0 }}>
                       {new Date(log.timestamp).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <p style={{ fontSize: 13, color: "var(--ink-700)", fontFamily: "var(--font-mono)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {log.userEmail}
                   </p>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{log.targetType}</span>
-                    <span style={{ fontSize: 11, color: "var(--muted)", fontFamily: "monospace" }}>{log.targetId.slice(0, 10)}…</span>
+                    <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>{log.targetType}</span>
+                    <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>{log.targetId.slice(0, 10)}…</span>
                   </div>
                 </div>
               ))}
@@ -107,9 +109,10 @@ export default function AuditoriaPage() {
 
       {hasMore && (
         <button
-          onClick={() => loadMore(lastDoc ?? undefined)}
+          onClick={() => loadMore(nextCursor ?? undefined)}
           disabled={loading}
-          style={{ alignSelf: "center", padding: "10px 24px", fontSize: 13, fontWeight: 500, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: 999, cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+          className="btn-secondary"
+          style={{ alignSelf: "center", opacity: loading ? 0.6 : 1 }}
         >
           {loading ? "Carregando…" : "Carregar mais"}
         </button>
