@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { auth } from "../../../../../lib/firebase";
+import { getToken } from "../../../../../lib/auth";
+import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   TargetStatus, RiskLevel, ClassificationLevel, LinkType,
   TargetAddress, TargetTattoo, TargetAssociate, TargetCriminalRecord, TargetWarrant,
@@ -11,12 +12,6 @@ import type {
 import {
   TARGET_STATUS_LABEL, RISK_LEVEL_LABEL, CLASSIFICATION_LABEL, LINK_TYPE_LABEL,
 } from "@etz/shared-types";
-
-async function getToken() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-  return user.getIdToken();
-}
 
 type FormState = {
   fullName: string;
@@ -76,6 +71,12 @@ export default function NovoAlvoPage() {
   const [form, setForm]     = useState<FormState>(INITIAL);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState("");
+
+  const [photos, setPhotos]               = useState<string[]>([]);
+  const [tattooImages, setTattooImages]   = useState<string[]>([]);
+  const [vehicleImages, setVehicleImages] = useState<string[]>([]);
+  const [addressImages, setAddressImages] = useState<string[]>([]);
+  const [attachments, setAttachments]     = useState<string[]>([]);
 
   function set(key: keyof FormState, value: unknown) {
     setForm(f => ({ ...f, [key]: value }));
@@ -196,6 +197,12 @@ export default function NovoAlvoPage() {
         riskLevel:       form.riskLevel       || null,
         classification:  form.classification  || null,
         analystNotes:    form.analystNotes    || null,
+
+        photos,
+        tattooImages,
+        vehicleImages,
+        addressImages,
+        attachments,
       };
 
       const res = await fetch("/api/defense/targets", {
@@ -478,6 +485,56 @@ export default function NovoAlvoPage() {
               </select>
             </FormField>
           </div>
+        </section>
+
+        {/* Fotos e Mídia */}
+        <section className="form-section">
+          <p className="form-section-title">Fotos e Mídia</p>
+
+          <FormField label="Fotos do Alvo">
+            <ImageUploader
+              images={photos}
+              category="photos"
+              onAdd={(url: string) => setPhotos(p => [...p, url])}
+              onRemove={(i: number) => setPhotos(p => p.filter((_, idx) => idx !== i))}
+            />
+          </FormField>
+
+          <FormField label="Imagens de Tatuagens">
+            <ImageUploader
+              images={tattooImages}
+              category="tattoos"
+              onAdd={(url: string) => setTattooImages(p => [...p, url])}
+              onRemove={(i: number) => setTattooImages(p => p.filter((_, idx) => idx !== i))}
+            />
+          </FormField>
+
+          <FormField label="Imagens de Veículos">
+            <ImageUploader
+              images={vehicleImages}
+              category="vehicles"
+              onAdd={(url: string) => setVehicleImages(p => [...p, url])}
+              onRemove={(i: number) => setVehicleImages(p => p.filter((_, idx) => idx !== i))}
+            />
+          </FormField>
+
+          <FormField label="Imagens de Endereços">
+            <ImageUploader
+              images={addressImages}
+              category="addresses"
+              onAdd={(url: string) => setAddressImages(p => [...p, url])}
+              onRemove={(i: number) => setAddressImages(p => p.filter((_, idx) => idx !== i))}
+            />
+          </FormField>
+
+          <FormField label="Outros Anexos">
+            <ImageUploader
+              images={attachments}
+              category="attachments"
+              onAdd={(url: string) => setAttachments(p => [...p, url])}
+              onRemove={(i: number) => setAttachments(p => p.filter((_, idx) => idx !== i))}
+            />
+          </FormField>
         </section>
 
         {/* Notas do Analista */}
