@@ -33,64 +33,71 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--paper-2)",
+        background: "var(--canvas)",
         padding: "24px",
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          display: "flex",
-          flexDirection: "column",
-          gap: 32,
-        }}
-      >
-        {/* Logo + marca */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <ETZLogoMark size={40} />
-          <span
-            style={{
-              fontSize: 20,
+      <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", gap: 28 }}>
+
+        {/* Logo + wordmark */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <ETZLogoMark size={36} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+            <span style={{
+              fontSize: 18,
               fontWeight: 700,
-              letterSpacing: "-0.03em",
-              color: "var(--ink)",
-            }}
-          >
-            ETZ
-          </span>
+              fontFamily: "var(--font-display)",
+              letterSpacing: "-0.02em",
+              color: "var(--accent)",
+            }}>
+              ETZ
+            </span>
+            <span style={{
+              fontSize: 10,
+              fontFamily: "var(--font-mono)",
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              color: "var(--ink-400)",
+              textTransform: "uppercase",
+            }}>
+              Defense
+            </span>
+          </div>
         </div>
 
         {/* Card de login */}
-        <div
-          style={{
-            background: "var(--paper)",
-            border: "1px solid var(--rule)",
-            borderRadius: "var(--radius-xl)",
-            padding: "36px 32px",
-            boxShadow: "var(--shadow-md)",
-          }}
-        >
-          <h1
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--ink)",
-              marginBottom: 6,
-            }}
-          >
+        <div style={{
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)",
+          padding: "32px 28px",
+          boxShadow: "var(--shadow-sm)",
+        }}>
+          <h1 style={{
+            fontSize: 18,
+            fontFamily: "var(--font-display)",
+            fontWeight: 600,
+            letterSpacing: "-0.012em",
+            color: "var(--ink-900)",
+            marginBottom: 4,
+          }}>
             Acesso à Plataforma
           </h1>
-          <p style={{ fontSize: 14, color: "var(--muted)", marginBottom: 28, lineHeight: 1.5 }}>
+          <p style={{
+            fontSize: 13,
+            fontFamily: "var(--font-ui)",
+            color: "var(--ink-500)",
+            marginBottom: 24,
+            lineHeight: 1.5,
+          }}>
             Use as credenciais fornecidas pelo administrador.
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
-                E-mail
-              </label>
+
+            {/* E-mail */}
+            <div className="form-field">
+              <label className="form-label">E-mail</label>
               <input
                 type="email"
                 required
@@ -98,27 +105,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="usuario@instituicao.gov.br"
-                style={{
-                  padding: "11px 14px",
-                  fontSize: 14,
-                  color: "var(--ink)",
-                  background: "var(--paper)",
-                  border: "1px solid var(--rule)",
-                  borderRadius: "var(--radius-md)",
-                  outline: "none",
-                  transition: "border-color var(--transition)",
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--blue)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--rule)")}
+                className="form-input"
               />
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
-                Senha
-              </label>
+            {/* Senha */}
+            <div className="form-field">
+              <label className="form-label">Senha</label>
               <input
                 type="password"
                 required
@@ -126,43 +119,30 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                style={{
-                  padding: "11px 14px",
-                  fontSize: 14,
-                  color: "var(--ink)",
-                  background: "var(--paper)",
-                  border: "1px solid var(--rule)",
-                  borderRadius: "var(--radius-md)",
-                  outline: "none",
-                  transition: "border-color var(--transition)",
-                  width: "100%",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "var(--blue)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--rule)")}
+                className="form-input"
               />
             </div>
 
+            {/* Erro */}
             {error && (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "#C0392B",
-                  background: "#FDF2F1",
-                  border: "1px solid #F5C6C2",
-                  borderRadius: "var(--radius-md)",
-                  padding: "10px 14px",
-                }}
-              >
+              <div style={{
+                fontSize: 13,
+                color: "var(--danger)",
+                background: "var(--danger-tint)",
+                border: "1px solid #f5c6c2",
+                borderRadius: "var(--r-sm)",
+                padding: "10px 14px",
+                fontFamily: "var(--font-ui)",
+              }}>
                 {error}
-              </p>
+              </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
               className="btn-primary"
-              style={{ marginTop: 8, width: "100%", opacity: loading ? 0.7 : 1 }}
+              style={{ marginTop: 4, width: "100%", opacity: loading ? 0.7 : 1, justifyContent: "center" }}
             >
               {loading ? "Entrando…" : "Entrar"}
             </button>
@@ -170,14 +150,13 @@ export default function LoginPage() {
         </div>
 
         {/* Rodapé */}
-        <p
-          style={{
-            fontSize: 12,
-            color: "var(--muted)",
-            textAlign: "center",
-            lineHeight: 1.6,
-          }}
-        >
+        <p style={{
+          fontSize: 12,
+          fontFamily: "var(--font-ui)",
+          color: "var(--ink-400)",
+          textAlign: "center",
+          lineHeight: 1.6,
+        }}>
           Acesso restrito a usuários autorizados.
           <br />
           Em caso de problemas, contate o administrador da sua instituição.
