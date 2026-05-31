@@ -26,11 +26,12 @@ export const TARGET_STATUS_LABEL: Record<TargetStatus, string> = {
   foragido:    "Foragido",
 };
 
-export type RiskLevel = "baixo" | "medio" | "alto";
+export type RiskLevel = "baixo" | "medio" | "alto" | "critico";
 export const RISK_LEVEL_LABEL: Record<RiskLevel, string> = {
-  baixo: "Baixo",
-  medio: "Médio",
-  alto:  "Alto",
+  baixo:   "Baixo",
+  medio:   "Médio",
+  alto:    "Alto",
+  critico: "Crítico",
 };
 
 export type LinkType = "familiar" | "profissional" | "criminal" | "social" | "outro";
@@ -127,4 +128,11 @@ export interface Target {
   // Notas e vínculos
   analystNotes:    string | null;
   caseId:          string | null;
+
+  // Mídia
+  photos:          string[];
+  tattooImages:    string[];
+  vehicleImages:   string[];
+  addressImages:   string[];
+  attachments:     string[];
 }
