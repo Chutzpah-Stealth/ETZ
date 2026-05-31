@@ -13,40 +13,53 @@ import type { DefenseRole } from "../../../lib/defense-guard";
 const DEFENSE_ROLES: DefenseRole[] = ["gestor", "analista", "agente_campo"];
 
 const ROLE_LABEL: Record<DefenseRole, string> = {
-  gestor:       "Gestor",
-  analista:     "Analista",
-  agente_campo: "Agente de Campo",
+  gestor:       "GESTOR",
+  analista:     "ANALISTA",
+  agente_campo: "AGENTE DE CAMPO",
 };
 
-const NAV = [
-  { href: "/alvos", label: "Alvos", icon: TargetIcon },
-];
-
-function MenuIcon() {
+function IconTarget() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function TargetIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="12" cy="12" r="10"/>
-      <circle cx="12" cy="12" r="5"/>
-      <circle cx="12" cy="12" r="1" fill="currentColor"/>
+      <circle cx="12" cy="12" r="6"/>
+      <circle cx="12" cy="12" r="2"/>
     </svg>
   );
 }
+
+function IconMenu() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="18" x2="20" y2="18"/>
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  );
+}
+
+function IconLogOut() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      <polyline points="16 17 21 12 16 7"/>
+      <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+  );
+}
+
+const NAV = [
+  { href: "/alvos", label: "Alvos", icon: IconTarget },
+];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {
   const router   = useRouter();
@@ -66,21 +79,9 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
       const data = snap.data();
       const userRole = data?.role as string;
 
-      if (userRole === "superadmin") {
-        router.replace("/admin");
-        return;
-      }
-
-      if (!DEFENSE_ROLES.includes(userRole as DefenseRole)) {
-        router.replace("/login");
-        return;
-      }
-
-      if (data?.status === "revoked") {
-        await signOut();
-        router.replace("/login");
-        return;
-      }
+      if (userRole === "superadmin") { router.replace("/admin"); return; }
+      if (!DEFENSE_ROLES.includes(userRole as DefenseRole)) { router.replace("/login"); return; }
+      if (data?.status === "revoked") { await signOut(); router.replace("/login"); return; }
 
       setRole(userRole as DefenseRole);
       setDisplayName(data?.displayName || user.email || "");
@@ -101,7 +102,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   if (!ready) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--paper-2)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
 
       {/* Topbar */}
       <header className="defense-topbar">
@@ -109,24 +110,48 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
           onClick={() => setSidebarOpen(v => !v)}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            color: "var(--ink)", display: "flex", alignItems: "center",
-            justifyContent: "center", padding: 6, borderRadius: "var(--radius-md)",
-            flexShrink: 0,
+            color: "var(--ink-600)", display: "flex", alignItems: "center",
+            justifyContent: "center", padding: 6, borderRadius: "var(--r-md)",
+            flexShrink: 0, transition: "background var(--transition), color var(--transition)",
           }}
+          onMouseEnter={e => { e.currentTarget.style.background = "var(--surface-2)"; e.currentTarget.style.color = "var(--ink-900)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--ink-600)"; }}
           aria-label={sidebarOpen ? "Fechar menu" : "Abrir menu"}
         >
-          {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
+          {sidebarOpen ? <IconX /> : <IconMenu />}
         </button>
+
+        {/* Wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
           <ETZLogoMark size={22} />
-          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>ETZ</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.08em", textTransform: "uppercase" }}>Defense</span>
+          <span style={{
+            fontSize: 15, fontWeight: 700,
+            fontFamily: "var(--font-display)",
+            letterSpacing: "-0.02em",
+            color: "var(--accent)",
+          }}>ETZ</span>
+          <span style={{
+            fontSize: 10, fontWeight: 500,
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.1em",
+            color: "var(--ink-400)",
+            textTransform: "uppercase",
+          }}>Defense</span>
         </div>
+
+        {/* Role pill — mono uppercase */}
         {role && (
           <span style={{
-            fontSize: 11, fontWeight: 600, color: "var(--muted)",
-            background: "var(--paper-2)", borderRadius: "var(--radius-pill)",
-            padding: "3px 10px", whiteSpace: "nowrap",
+            fontSize: 10,
+            fontFamily: "var(--font-mono)",
+            fontWeight: 500,
+            color: "var(--ink-500)",
+            background: "var(--surface-2)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-full)",
+            padding: "3px 10px",
+            letterSpacing: "0.08em",
+            whiteSpace: "nowrap",
           }}>
             {ROLE_LABEL[role]}
           </span>
@@ -143,15 +168,23 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
       <aside className={`defense-sidebar${sidebarOpen ? " open" : ""}`}>
         {/* User info */}
         <div style={{
-          padding: "16px 16px 12px",
-          borderBottom: "1px solid var(--rule-soft)",
+          padding: "14px 16px 12px",
+          borderBottom: "1px solid var(--line)",
         }}>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{
+            fontSize: 13,
+            fontWeight: 500,
+            fontFamily: "var(--font-ui)",
+            color: "var(--ink-800)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}>
             {displayName}
           </p>
         </div>
 
-        <nav style={{ flex: 1, padding: "8px 0", display: "flex", flexDirection: "column", gap: 2 }}>
+        <nav style={{ flex: 1, padding: "8px 0", display: "flex", flexDirection: "column", gap: 1 }}>
           {NAV.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
@@ -167,28 +200,18 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
           })}
         </nav>
 
-        <div style={{ padding: "8px 0", borderTop: "1px solid var(--rule)" }}>
+        <div style={{ padding: "8px 0", borderTop: "1px solid var(--line)" }}>
           <button onClick={handleSignOut} className="defense-nav-link">
-            <SignOutIcon />
+            <IconLogOut />
             Sair
           </button>
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <main className={`defense-main${sidebarOpen ? " open" : ""}`}>
         {children}
       </main>
     </div>
-  );
-}
-
-function SignOutIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/>
-      <line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
   );
 }
