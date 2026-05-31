@@ -61,7 +61,6 @@ export default function Security() {
   return (
     <section id="segurança" className="section-alt">
       <div className="container">
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -81,7 +80,6 @@ export default function Security() {
           </p>
         </div>
 
-        {/* 2x2 grid */}
         <div
           style={{
             display: "grid",

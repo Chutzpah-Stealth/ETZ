@@ -20,7 +20,6 @@ export default function Footer({ variant = "defense" }: { variant?: "defense" })
           gap: 24,
         }}
       >
-        {/* Left — logo + copyright */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <ETZLogoMark size={20} />
           <span
@@ -36,7 +35,6 @@ export default function Footer({ variant = "defense" }: { variant?: "defense" })
           </span>
         </div>
 
-        {/* Center — disclaimer */}
         <p
           style={{
             fontSize: 12,
@@ -49,7 +47,6 @@ export default function Footer({ variant = "defense" }: { variant?: "defense" })
           {disclaimer}
         </p>
 
-        {/* Right — signature */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <span
             title="Verdade"

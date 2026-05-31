@@ -11,7 +11,6 @@ const MockDashboard = () => (
       margin: "0 auto",
     }}
   >
-    {/* Topbar */}
     <div
       style={{
         display: "flex",
@@ -31,9 +30,7 @@ const MockDashboard = () => (
       <div style={{ width: 60 }} />
     </div>
 
-    {/* Content */}
     <div style={{ padding: "24px 20px 28px" }}>
-      {/* Stats row */}
       <div
         style={{
           display: "grid",
@@ -85,7 +82,6 @@ const MockDashboard = () => (
         ))}
       </div>
 
-      {/* Activity bar */}
       <div
         style={{
           background: "var(--paper)",
@@ -150,7 +146,6 @@ export default function Hero() {
   return (
     <section id="produto" className="section">
       <div className="container">
-        {/* Text content — centered */}
         <div
           style={{
             display: "flex",
@@ -197,7 +192,6 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Mock dashboard */}
         <div className="fade-up delay-4">
           <MockDashboard />
         </div>

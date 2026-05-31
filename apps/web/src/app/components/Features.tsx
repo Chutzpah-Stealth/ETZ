@@ -64,7 +64,6 @@ export default function Features() {
   return (
     <section id="produto-features" className="section-alt">
       <div className="container">
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -84,7 +83,6 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Cards grid */}
         <div
           style={{
             display: "grid",

@@ -11,7 +11,6 @@ export default function CTABanner() {
           gap: 24,
         }}
       >
-        {/* Decorative ring */}
         <div
           style={{
             width: 56,
