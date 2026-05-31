@@ -22,10 +22,6 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const target = await getTarget(id, user.unitId);
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (user.role === "agente_campo" && target.createdBy !== user.uid) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   return NextResponse.json(target);
 }
 
@@ -36,10 +32,6 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
   const target = await getTarget(id, user.unitId);
   if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  if (user.role === "agente_campo" && target.createdBy !== user.uid) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const body = await req.json() as Partial<Target>;
 
@@ -82,10 +74,6 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 export async function DELETE(req: NextRequest, ctx: RouteContext) {
   const user = await verifyDefenseUser(req);
   if (user instanceof NextResponse) return user;
-
-  if (user.role === "agente_campo") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const { id } = await ctx.params;
   const target = await getTarget(id, user.unitId);

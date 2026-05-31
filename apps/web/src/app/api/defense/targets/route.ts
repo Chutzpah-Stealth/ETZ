@@ -4,7 +4,6 @@ import { verifyDefenseUser } from "../../../../lib/defense-guard";
 import { writeAuditLog } from "../../../../lib/admin-guard";
 import type { Target } from "@etz/shared-types";
 
-// agente_campo sees only own records; gestor/analista see all unit records
 export async function GET(req: NextRequest) {
   const user = await verifyDefenseUser(req);
   if (user instanceof NextResponse) return user;
@@ -14,11 +13,7 @@ export async function GET(req: NextRequest) {
   const status  = searchParams.get("status") ?? "";
   const risk    = searchParams.get("risk") ?? "";
 
-  let query = adminDb.collection("targets").where("unitId", "==", user.unitId);
-
-  if (user.role === "agente_campo") {
-    query = query.where("createdBy", "==", user.uid) as typeof query;
-  }
+  const query = adminDb.collection("targets").where("unitId", "==", user.unitId);
 
   const snap = await query.orderBy("updatedAt", "desc").get();
   let targets = snap.docs.map(d => ({ id: d.id, ...d.data() } as Target));
@@ -108,6 +103,12 @@ export async function POST(req: NextRequest) {
 
     analystNotes:    body.analystNotes    ?? null,
     caseId:          body.caseId          ?? null,
+
+    photos:          body.photos          ?? [],
+    tattooImages:    body.tattooImages    ?? [],
+    vehicleImages:   body.vehicleImages   ?? [],
+    addressImages:   body.addressImages   ?? [],
+    attachments:     body.attachments     ?? [],
   };
 
   const ref = await adminDb.collection("targets").add(data);
