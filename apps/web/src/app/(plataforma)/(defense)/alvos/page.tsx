@@ -3,28 +3,114 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { auth } from "../../../../lib/firebase";
+import { getToken } from "../../../../lib/auth";
 import type { Target, TargetStatus, RiskLevel } from "@etz/shared-types";
 import { TARGET_STATUS_LABEL, RISK_LEVEL_LABEL } from "@etz/shared-types";
 
-async function getToken(): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-  return user.getIdToken();
-}
-
-const STATUS_COLOR: Record<TargetStatus, { color: string; bg: string }> = {
-  investigado: { color: "#1a6e3c", bg: "#edf7f1" },
-  suspeito:    { color: "#7a5c00", bg: "#fef9e8" },
-  indiciado:   { color: "#7a3500", bg: "#fff3eb" },
-  preso:       { color: "#c0392b", bg: "#fdf2f1" },
-  foragido:    { color: "#5c1a6e", bg: "#f5edf7" },
+const STATUS_STYLE: Record<TargetStatus, { color: string; bg: string }> = {
+  investigado: { color: "#2451c9", bg: "#eaf0fd" },
+  suspeito:    { color: "#b5740d", bg: "#fbf0db" },
+  indiciado:   { color: "#d2731a", bg: "#fdf0e0" },
+  preso:       { color: "#49515f", bg: "#e8ebf0" },
+  foragido:    { color: "#c4392f", bg: "#fbe8e6" },
 };
 
-const RISK_COLOR: Record<RiskLevel, { color: string; bg: string }> = {
-  baixo: { color: "#1a6e3c", bg: "#edf7f1" },
-  medio: { color: "#7a5c00", bg: "#fef9e8" },
-  alto:  { color: "#c0392b", bg: "#fdf2f1" },
+const RISK_STYLE: Record<RiskLevel, { color: string; bg: string; label: string }> = {
+  baixo:   { color: "#1f8a52", bg: "#e7f4ec", label: "BAIXO"   },
+  medio:   { color: "#b5740d", bg: "#fbf0db", label: "MÉDIO"   },
+  alto:    { color: "#c4392f", bg: "#fbe8e6", label: "ALTO"    },
+  critico: { color: "#8e1f1a", bg: "#f6e1df", label: "CRÍTICO" },
+};
+
+function RiskBadge({ level }: { level: RiskLevel }) {
+  const s = RISK_STYLE[level];
+  if (!s) return null;
+  return (
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      color: s.color,
+      background: s.bg,
+      borderRadius: 999,
+      padding: "3px 9px",
+      fontSize: 11,
+      fontFamily: "var(--font-mono)",
+      fontWeight: 500,
+      textTransform: "uppercase",
+      letterSpacing: "0.09em",
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0, display: "inline-block" }} />
+      {s.label}
+    </span>
+  );
+}
+
+// Badge de status com dot
+function StatusBadge({ status }: { status: TargetStatus }) {
+  const s = STATUS_STYLE[status];
+  if (!s) return null;
+  return (
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      color: s.color,
+      background: s.bg,
+      borderRadius: 999,
+      padding: "3px 9px",
+      fontSize: 11,
+      fontWeight: 500,
+      fontFamily: "var(--font-ui)",
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.color, flexShrink: 0, display: "inline-block" }} />
+      {TARGET_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+function TargetAvatar({ photo, name, small }: { photo?: string; name: string; small?: boolean }) {
+  const w = small ? 60 : 110;
+  const h = small ? 74 : 130;
+  const base: React.CSSProperties = {
+    width: w, height: h,
+    borderRadius: "var(--r-md)",
+    overflow: "hidden", flexShrink: 0,
+    background: "var(--surface-2)",
+    border: "1px solid var(--line)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+  };
+  if (photo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <div style={base}>
+        <img src={photo} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} />
+      </div>
+    );
+  }
+  return (
+    <div style={base}>
+      <svg width={small ? 24 : 36} height={small ? 24 : 36} viewBox="0 0 24 24" fill="none" stroke="var(--ink-200)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="4.5"/>
+        <path d="M3 21c0-4.5 4-8 9-8s9 3.5 9 8"/>
+      </svg>
+    </div>
+  );
+}
+
+const TH_STYLE: React.CSSProperties = {
+  padding: "10px 16px",
+  fontSize: 11,
+  fontFamily: "var(--font-mono)",
+  fontWeight: 500,
+  color: "var(--ink-500)",
+  textAlign: "left",
+  letterSpacing: "0.09em",
+  textTransform: "uppercase",
+  whiteSpace: "nowrap",
+  background: "var(--surface-2)",
 };
 
 export default function AlvosPage() {
@@ -74,29 +160,43 @@ export default function AlvosPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 1260, display: "flex", flexDirection: "column", gap: 24 }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
+          <p style={{
+            fontSize: 11,
+            fontFamily: "var(--font-mono)",
+            fontWeight: 500,
+            color: "var(--accent)",
+            letterSpacing: "0.09em",
+            textTransform: "uppercase",
+            marginBottom: 4,
+          }}>
             ETZ Defense
           </p>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Alvos</h1>
+          <h1>Alvos</h1>
         </div>
-        <Link href="/alvos/novo" className="btn-primary" style={{ padding: "10px 20px", fontSize: 13 }}>
+        <Link href="/alvos/novo" className="btn-primary btn-primary--sm">
           + Novo Alvo
         </Link>
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <div style={{
-        background: "var(--paper)", border: "1px solid var(--rule)",
-        borderRadius: "var(--radius-xl)", padding: "16px 20px",
-        display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        padding: "14px 16px",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 12,
+        alignItems: "flex-end",
+        boxShadow: "var(--shadow-xs)",
       }}>
-        <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 5 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Buscar</label>
+        <div className="form-field" style={{ flex: "1 1 200px" }}>
+          <label className="form-label">Buscar</label>
           <input
             type="text"
             placeholder="Nome, apelido ou CPF…"
@@ -105,15 +205,15 @@ export default function AlvosPage() {
             className="form-input"
           />
         </div>
-        <div style={{ flex: "0 1 160px", display: "flex", flexDirection: "column", gap: 5 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Status</label>
+        <div className="form-field" style={{ flex: "0 1 160px" }}>
+          <label className="form-label">Status</label>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="form-input form-select">
             <option value="">Todos</option>
             {Object.entries(TARGET_STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
-        <div style={{ flex: "0 1 140px", display: "flex", flexDirection: "column", gap: 5 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Risco</label>
+        <div className="form-field" style={{ flex: "0 1 140px" }}>
+          <label className="form-label">Risco</label>
           <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)} className="form-input form-select">
             <option value="">Todos</option>
             {Object.entries(RISK_LEVEL_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -121,18 +221,39 @@ export default function AlvosPage() {
         </div>
       </div>
 
-      {/* Table / Cards */}
-      <div style={{ background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+      {/* Tabela / Cards */}
+      <div style={{
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        overflow: "hidden",
+        boxShadow: "var(--shadow-sm)",
+      }}>
         {loading ? (
-          <p style={{ padding: 24, fontSize: 14, color: "var(--muted)" }}>Carregando…</p>
+          <p style={{ padding: 24, fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Carregando…</p>
         ) : targets.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "var(--muted)" }}>
-              {search || statusFilter || riskFilter ? "Nenhum alvo encontrado para os filtros." : "Nenhum alvo cadastrado ainda."}
+          <div style={{ padding: 48, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            {/* Estado vazio — ícone neutro */}
+            <div style={{
+              width: 40, height: 40,
+              background: "var(--surface-2)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-md)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "var(--ink-300)",
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+              </svg>
+            </div>
+            <p style={{ fontSize: 14, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>
+              {search || statusFilter || riskFilter
+                ? "Nenhum alvo encontrado para os filtros aplicados."
+                : "Nenhum alvo cadastrado ainda."}
             </p>
             {!search && !statusFilter && !riskFilter && (
-              <Link href="/alvos/novo" style={{ display: "inline-block", marginTop: 16, fontSize: 13, fontWeight: 600, color: "var(--blue)" }}>
-                Cadastrar primeiro alvo →
+              <Link href="/alvos/novo" className="btn-primary btn-primary--sm">
+                Cadastrar primeiro alvo
               </Link>
             )}
           </div>
@@ -141,59 +262,84 @@ export default function AlvosPage() {
             {/* Desktop table */}
             <table className="targets-table" style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ background: "var(--paper-2)" }}>
-                  {["Nome / Alcunhas", "CPF", "Status", "Risco", "Última atualização", ""].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", fontSize: 11, fontWeight: 600, color: "var(--muted)", textAlign: "left", letterSpacing: "0.05em", textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
-                  ))}
+                <tr>
+                  <th style={{ ...TH_STYLE, width: 130 }}>Foto</th>
+                  <th style={{ ...TH_STYLE, paddingLeft: 28 }}>Nome / Alcunhas</th>
+                  <th style={TH_STYLE}>CPF</th>
+                  <th style={TH_STYLE}>Status</th>
+                  <th style={TH_STYLE}>Nome da Mãe</th>
+                  <th style={TH_STYLE}>Atualizado</th>
+                  <th style={{ ...TH_STYLE, width: 1 }}></th>
                 </tr>
               </thead>
               <tbody>
                 {targets.map((t, i) => (
                   <tr
                     key={t.id}
-                    style={{ borderTop: i === 0 ? "none" : "1px solid var(--rule-soft)", cursor: "pointer" }}
+                    style={{
+                      borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                      cursor: "pointer",
+                      transition: "background var(--transition)",
+                    }}
                     onClick={() => router.push(`/alvos/${t.id}`)}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--surface-2)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                   >
-                    <td style={{ padding: "12px 16px" }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{t.fullName}</p>
+                    <td style={{ padding: "8px 8px 8px 14px", width: 130, verticalAlign: "middle" }}>
+                      <TargetAvatar photo={t.photos?.[0]} name={t.fullName} />
+                    </td>
+                    <td style={{ padding: "12px 16px 12px 28px", verticalAlign: "middle" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", fontFamily: "var(--font-ui)" }}>{t.fullName}</p>
                       {t.aliases.length > 0 && (
-                        <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+                        <p style={{ fontSize: 11, color: "var(--ink-400)", marginTop: 2, fontFamily: "var(--font-ui)" }}>
                           {t.aliases.slice(0, 3).join(", ")}{t.aliases.length > 3 ? " …" : ""}
                         </p>
                       )}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--muted)", fontFamily: "monospace" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
                       {t.cpf ?? "—"}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      {t.status ? (
-                        <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px", ...STATUS_COLOR[t.status] }}>
-                          {TARGET_STATUS_LABEL[t.status]}
-                        </span>
-                      ) : <span style={{ fontSize: 12, color: "var(--muted)" }}>—</span>}
+                      {t.status ? <StatusBadge status={t.status} /> : <span style={{ fontSize: 12, color: "var(--ink-300)" }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      {t.riskLevel ? (
-                        <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px", ...RISK_COLOR[t.riskLevel] }}>
-                          {RISK_LEVEL_LABEL[t.riskLevel]}
-                        </span>
-                      ) : <span style={{ fontSize: 12, color: "var(--muted)" }}>—</span>}
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-600)", fontFamily: "var(--font-ui)" }}>
+                      {t.motherName ?? <span style={{ fontSize: 12, color: "var(--ink-300)" }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-400)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
                       {new Date(t.updatedAt).toLocaleDateString("pt-BR")}
                     </td>
                     <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 6 }}>
                         <Link
                           href={`/alvos/${t.id}`}
-                          style={{ fontSize: 12, color: "var(--blue)", background: "var(--blue-soft)", border: "none", borderRadius: "var(--radius-md)", padding: "4px 10px", textDecoration: "none" }}
+                          style={{
+                            fontSize: 12,
+                            color: "var(--accent)",
+                            background: "var(--accent-tint)",
+                            border: "none",
+                            borderRadius: "var(--r-sm)",
+                            padding: "4px 10px",
+                            textDecoration: "none",
+                            fontWeight: 500,
+                            transition: "background var(--transition)",
+                          }}
                         >
                           Ver
                         </Link>
                         <button
                           onClick={() => handleDelete(t.id, t.fullName)}
                           disabled={deleting === t.id}
-                          style={{ fontSize: 12, color: "#c0392b", background: "none", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "4px 10px", cursor: "pointer", opacity: deleting === t.id ? 0.5 : 1 }}
+                          style={{
+                            fontSize: 12,
+                            color: "var(--danger)",
+                            background: "none",
+                            border: "1px solid var(--line-strong)",
+                            borderRadius: "var(--r-sm)",
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                            opacity: deleting === t.id ? 0.5 : 1,
+                            fontFamily: "var(--font-ui)",
+                          }}
                         >
                           Excluir
                         </button>
@@ -205,39 +351,91 @@ export default function AlvosPage() {
             </table>
 
             {/* Mobile cards */}
-            <div className="targets-cards" style={{ padding: "12px" }}>
+            <div className="targets-cards" style={{ padding: "10px", gap: 8 }}>
               {targets.map(t => (
-                <Link key={t.id} href={`/alvos/${t.id}`} style={{ textDecoration: "none" }}>
-                  <div style={{
-                    background: "var(--paper)", border: "1px solid var(--rule)",
-                    borderRadius: "var(--radius-lg)", padding: "14px 16px",
-                    display: "flex", flexDirection: "column", gap: 8,
-                  }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                      <div>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)" }}>{t.fullName}</p>
-                        {t.aliases.length > 0 && (
-                          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{t.aliases.slice(0, 2).join(", ")}</p>
+                <div
+                  key={t.id}
+                  style={{
+                    background: "var(--surface)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--r-md)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-xs)",
+                  }}
+                >
+                  {/* Área clicável principal */}
+                  <div
+                    onClick={() => router.push(`/alvos/${t.id}`)}
+                    style={{ padding: "12px", display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer" }}
+                  >
+                    <TargetAvatar photo={t.photos?.[0]} name={t.fullName} small />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-800)", fontFamily: "var(--font-ui)", lineHeight: 1.3 }}>{t.fullName}</p>
+                        {t.riskLevel && <RiskBadge level={t.riskLevel} />}
+                      </div>
+                      {t.aliases.length > 0 && (
+                        <p style={{ fontSize: 11, color: "var(--ink-400)", marginTop: 3, fontFamily: "var(--font-ui)" }}>
+                          {t.aliases.slice(0, 2).join(", ")}
+                        </p>
+                      )}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", marginTop: 6 }}>
+                        {t.cpf && (
+                          <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>{t.cpf}</span>
+                        )}
+                        {t.motherName && (
+                          <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>Mãe: {t.motherName}</span>
                         )}
                       </div>
-                      {t.riskLevel && (
-                        <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "3px 8px", flexShrink: 0, ...RISK_COLOR[t.riskLevel] }}>
-                          {RISK_LEVEL_LABEL[t.riskLevel]}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                        {t.status && <StatusBadge status={t.status} />}
+                        <span style={{ fontSize: 10, color: "var(--ink-400)", fontFamily: "var(--font-mono)", marginLeft: "auto" }}>
+                          {new Date(t.updatedAt).toLocaleDateString("pt-BR")}
                         </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {t.status && (
-                        <span style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "2px 8px", ...STATUS_COLOR[t.status] }}>
-                          {TARGET_STATUS_LABEL[t.status]}
-                        </span>
-                      )}
-                      <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                        {new Date(t.updatedAt).toLocaleDateString("pt-BR")}
-                      </span>
+                      </div>
                     </div>
                   </div>
-                </Link>
+
+                  {/* Rodapé de ações */}
+                  <div style={{
+                    borderTop: "1px solid var(--line)",
+                    display: "flex",
+                  }}>
+                    <Link
+                      href={`/alvos/${t.id}`}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        fontFamily: "var(--font-ui)",
+                        color: "var(--accent)",
+                        textDecoration: "none",
+                        textAlign: "center",
+                        borderRight: "1px solid var(--line)",
+                      }}
+                    >
+                      Ver perfil
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(t.id, t.fullName)}
+                      disabled={deleting === t.id}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        fontSize: 12,
+                        fontFamily: "var(--font-ui)",
+                        color: "var(--danger)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        opacity: deleting === t.id ? 0.5 : 1,
+                      }}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </>
@@ -245,7 +443,7 @@ export default function AlvosPage() {
       </div>
 
       {!loading && targets.length > 0 && (
-        <p style={{ fontSize: 12, color: "var(--muted)", textAlign: "right" }}>
+        <p style={{ fontSize: 12, color: "var(--ink-400)", textAlign: "right", fontFamily: "var(--font-mono)" }}>
           {targets.length} {targets.length === 1 ? "alvo" : "alvos"}
         </p>
       )}
