@@ -49,7 +49,7 @@ temp/
 .turbo/
 
 # pnpm
-pnpm-lock.yaml
+# pnpm-lock.yaml — NÃO ignorar: lockfile deve ser versionado para garantir builds reproduzíveis e segurança de supply chain
 
 # Claude Code
 skills-lock.json
