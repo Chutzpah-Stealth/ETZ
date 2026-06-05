@@ -3,7 +3,6 @@ import { NextRequest } from "next/server";
 const mockVerifyIdToken = jest.fn();
 const mockDeleteUser = jest.fn();
 const mockUserDelete = jest.fn();
-const mockCallerGet = jest.fn();
 const mockAuditAdd = jest.fn();
 
 jest.mock("../../lib/firebase-admin", () => ({

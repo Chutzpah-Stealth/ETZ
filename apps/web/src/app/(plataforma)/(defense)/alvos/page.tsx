@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
+import { useAuthedFetch } from "../../../../lib/useAuthedFetch";
 import { useConfirm } from "../../../components/ConfirmDialog";
 import type { Target, TargetStatus, RiskLevel } from "@etz/shared-types";
 import { TARGET_STATUS_LABEL, RISK_LEVEL_LABEL } from "@etz/shared-types";
@@ -117,34 +118,19 @@ const TH_STYLE: React.CSSProperties = {
 export default function AlvosPage() {
   const router = useRouter();
   const { confirm, ConfirmUI } = useConfirm();
-  const [targets, setTargets]   = useState<Target[]>([]);
-  const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [riskFilter, setRiskFilter]     = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const fetchTargets = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const params = new URLSearchParams();
-      if (search)       params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-      if (riskFilter)   params.set("risk", riskFilter);
-      const res = await fetch(`/api/defense/targets?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      setTargets(await res.json());
-    } catch {
-      setTargets([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter, riskFilter]);
-
-  useEffect(() => { fetchTargets(); }, [fetchTargets]);
+  const params = new URLSearchParams();
+  if (search)       params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  if (riskFilter)   params.set("risk", riskFilter);
+  const { data: targets, loading, refetch } = useAuthedFetch<Target[]>(
+    `/api/defense/targets?${params.toString()}`,
+    { initial: [] },
+  );
 
   async function handleDelete(id: string, name: string) {
     const ok = await confirm({
@@ -161,7 +147,7 @@ export default function AlvosPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      await fetchTargets();
+      await refetch();
     } finally {
       setDeleting(null);
     }

@@ -3,6 +3,8 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { getToken } from "../../../../../lib/auth";
+import { useAuthedFetch } from "../../../../../lib/useAuthedFetch";
+import { EntitySearchSelect } from "../../../../components/EntitySearchSelect";
 import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   Target, TargetStatus, RiskLevel, ClassificationLevel, LinkType,
@@ -169,34 +171,9 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
     setEditState(s => ({ ...s, [key]: value }));
 
   // ── Casos vinculados (N→N pelo lado do alvo) ──
-  const [linkedCases, setLinkedCases]   = useState<Case[]>([]);
-  const [loadingCases, setLoadingCases] = useState(false);
-  const [caseSearch, setCaseSearch]     = useState("");
-  const [caseResults, setCaseResults]   = useState<Case[]>([]);
-  const [searchingCase, setSearchingCase] = useState(false);
+  const { data: linkedCases, loading: loadingCases, refetch: loadLinkedCases } =
+    useAuthedFetch<Case[]>(activeTab === "casos" ? `/api/defense/cases?targetId=${id}` : null, { initial: [] });
   const [linkBusy, setLinkBusy]         = useState(false);
-
-  async function loadLinkedCases() {
-    setLoadingCases(true);
-    try {
-      const token = await getToken();
-      const res = await fetch(`/api/defense/cases?targetId=${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setLinkedCases(res.ok ? await res.json() : []);
-    } catch { setLinkedCases([]); }
-    finally { setLoadingCases(false); }
-  }
-
-  async function searchCases(q: string) {
-    setCaseSearch(q);
-    if (!q.trim()) { setCaseResults([]); return; }
-    setSearchingCase(true);
-    try {
-      const token = await getToken();
-      const res = await fetch(`/api/defense/cases?search=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
-      setCaseResults(res.ok ? await res.json() : []);
-    } catch { setCaseResults([]); }
-    finally { setSearchingCase(false); }
-  }
 
   async function linkCase(caseId: string, role: CaseTargetRole) {
     setLinkBusy(true);
@@ -207,7 +184,6 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ targetId: id, role }),
       });
-      setCaseSearch(""); setCaseResults([]);
       await loadLinkedCases();
     } finally { setLinkBusy(false); }
   }
@@ -228,10 +204,6 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
   function roleOf(c: Case): CaseTargetRole {
     return (c.caseTargets ?? []).find(l => l.targetId === id)?.role ?? "outro";
   }
-
-  useEffect(() => {
-    if (activeTab === "casos") loadLinkedCases();
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
@@ -627,58 +599,17 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
           <Section title="Casos Vinculados">
             {/* Busca-autocomplete de casos — só no modo de edição */}
             {E && (
-            <div className="form-field" style={{ position: "relative", marginBottom: 4 }}>
-              <label className="form-label">Vincular a um caso (busque pelo nome)</label>
-              <input
-                type="text"
-                value={caseSearch}
-                onChange={e => searchCases(e.target.value)}
+              <EntitySearchSelect<Case>
+                label="Vincular a um caso (busque pelo nome)"
                 placeholder="Digite para buscar casos da unidade…"
-                className="form-input"
-                autoComplete="off"
+                searchUrl={q => `/api/defense/cases?search=${encodeURIComponent(q)}`}
+                getKey={c => c.id}
+                getPrimary={c => c.name}
+                getSecondary={c => `${c.caseNumber ?? "sem número"} · ${CASE_STATUS_LABEL[c.status]}`}
+                isSelected={c => linkedCases.some(lc => lc.id === c.id)}
+                selectedLabel="já vinculado"
+                onSelect={c => linkCase(c.id, "outro")}
               />
-              {caseSearch.trim() && (
-                <div style={{
-                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4,
-                  background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-md)",
-                  boxShadow: "var(--shadow-md)", maxHeight: 280, overflowY: "auto",
-                }}>
-                  {searchingCase ? (
-                    <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Buscando…</p>
-                  ) : caseResults.length === 0 ? (
-                    <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum caso encontrado.</p>
-                  ) : (
-                    caseResults.map(c => {
-                      const already = linkedCases.some(lc => lc.id === c.id);
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          disabled={already || linkBusy}
-                          onClick={() => { if (!already) linkCase(c.id, "outro"); }}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-                            padding: "10px 14px", border: "none", borderBottom: "1px solid var(--line)",
-                            background: "none", cursor: already ? "default" : "pointer", opacity: already ? 0.5 : 1,
-                            fontFamily: "var(--font-ui)",
-                          }}
-                        >
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", display: "block" }}>{c.name}</span>
-                            <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
-                              {c.caseNumber ?? "sem número"} · {CASE_STATUS_LABEL[c.status]}
-                            </span>
-                          </span>
-                          {already
-                            ? <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>já vinculado</span>
-                            : <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>+ vincular</span>}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
             )}
 
             {loadingCases ? (

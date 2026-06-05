@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
+import { useAuthedFetch } from "../../../../lib/useAuthedFetch";
 import { useConfirm } from "../../../components/ConfirmDialog";
 import type { Case, ClassificationLevel } from "@etz/shared-types";
 import { CASE_STATUS_LABEL, CLASSIFICATION_LABEL } from "@etz/shared-types";
@@ -34,32 +35,17 @@ const TH: React.CSSProperties = {
 export default function CasosPage() {
   const router = useRouter();
   const { confirm, ConfirmUI } = useConfirm();
-  const [cases, setCases]         = useState<Case[]>([]);
-  const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
   const [statusFilter, setStatus] = useState("");
   const [deleting, setDeleting]   = useState<string | null>(null);
 
-  const fetchCases = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const params = new URLSearchParams();
-      if (search)       params.set("search", search);
-      if (statusFilter) params.set("status", statusFilter);
-      const res = await fetch(`/api/defense/cases?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      setCases(await res.json());
-    } catch {
-      setCases([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, statusFilter]);
-
-  useEffect(() => { fetchCases(); }, [fetchCases]);
+  const params = new URLSearchParams();
+  if (search)       params.set("search", search);
+  if (statusFilter) params.set("status", statusFilter);
+  const { data: cases, loading, refetch } = useAuthedFetch<Case[]>(
+    `/api/defense/cases?${params.toString()}`,
+    { initial: [] },
+  );
 
   async function handleDelete(id: string, name: string) {
     const ok = await confirm({
@@ -76,7 +62,7 @@ export default function CasosPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      await fetchCases();
+      await refetch();
     } finally {
       setDeleting(null);
     }

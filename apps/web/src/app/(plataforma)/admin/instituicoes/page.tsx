@@ -202,8 +202,8 @@ function ModalActions({ loading, onCancel, label }: { loading: boolean; onCancel
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px", overscrollBehavior: "contain" }}>
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: "clamp(20px, 5vw, 32px)", width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px", overscrollBehavior: "contain" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: "clamp(20px, 5vw, 32px)", width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain" }}>
         <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink-900)", marginBottom: 24 }}>{title}</h2>
         {children}
       </div>

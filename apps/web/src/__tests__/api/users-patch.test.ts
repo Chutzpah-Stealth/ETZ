@@ -6,7 +6,6 @@ const mockRevokeRefreshTokens = jest.fn();
 const mockUserGet = jest.fn();
 const mockInstGet = jest.fn();
 const mockUserUpdate = jest.fn();
-const mockUserGetAfterUpdate = jest.fn();
 const mockAuditAdd = jest.fn();
 
 jest.mock("../../lib/firebase-admin", () => ({

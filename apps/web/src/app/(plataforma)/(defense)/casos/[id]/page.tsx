@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../../lib/auth";
+import { useAuthedFetch } from "../../../../../lib/useAuthedFetch";
 import { useConfirm } from "../../../../components/ConfirmDialog";
+import { EntitySearchSelect } from "../../../../components/EntitySearchSelect";
 import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   Case, CaseStatus, ClassificationLevel, Target, RiskLevel, TargetStatus,
@@ -80,8 +82,6 @@ export default function CasoDetailPage({ params }: RouteParams) {
   const router  = useRouter();
   const { confirm, ConfirmUI } = useConfirm();
 
-  const [caso, setCaso]         = useState<Case | null>(null);
-  const [loading, setLoading]   = useState(true);
   const [tab, setTab]           = useState<Tab>("visao");
   const [error, setError]       = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -135,10 +135,6 @@ export default function CasoDetailPage({ params }: RouteParams) {
   const [savingAlvos, setSavingAlvos]   = useState(false);
   // mapa targetId → Target (resolve nome/cpf/status/risco dos alvos vinculados)
   const [targetMap, setTargetMap]       = useState<Record<string, Target>>({});
-  // busca-autocomplete de alvos
-  const [tgtSearch, setTgtSearch]       = useState("");
-  const [tgtResults, setTgtResults]     = useState<Target[]>([]);
-  const [searchingTgt, setSearchingTgt] = useState(false);
 
   // Tab 4
   const [editComm, setEditComm]       = useState<string[]>([]);
@@ -203,49 +199,17 @@ export default function CasoDetailPage({ params }: RouteParams) {
     setEditNotes(data.notes ?? "");
   }
 
-  async function loadCase() {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const res = await fetch(`/api/defense/cases/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) { router.replace("/casos"); return; }
-      const data: Case = await res.json();
-      setCaso(data);
-      populate(data);
-    } catch { router.replace("/casos"); }
-    finally { setLoading(false); }
-  }
+  // Caso atual: fetch + populate dos estados de edição; 404 redireciona para a lista
+  const { data: caso, setData: setCaso, loading, refetch: loadCase } = useAuthedFetch<Case | null>(
+    `/api/defense/cases/${id}`,
+    { initial: null, onSuccess: d => { if (d) populate(d); }, onError: () => router.replace("/casos") },
+  );
 
-  // resolve os alvos vinculados (targetId → Target) para exibir nome/cpf/status/risco
-  async function loadTargetMap() {
-    try {
-      const token = await getToken();
-      const res = await fetch(`/api/defense/targets`, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) return;
-      const all: Target[] = await res.json();
-      const map: Record<string, Target> = {};
-      for (const t of all) map[t.id] = t;
-      setTargetMap(map);
-    } catch { /* mantém mapa anterior */ }
-  }
-
-  // busca-autocomplete de alvos por nome/apelido/CPF
-  async function searchTargets(q: string) {
-    setTgtSearch(q);
-    if (!q.trim()) { setTgtResults([]); return; }
-    setSearchingTgt(true);
-    try {
-      const token = await getToken();
-      const res = await fetch(`/api/defense/targets?search=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
-      setTgtResults(res.ok ? await res.json() : []);
-    } catch { setTgtResults([]); }
-    finally { setSearchingTgt(false); }
-  }
-
-  useEffect(() => { loadCase(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (tab === "alvos" && Object.keys(targetMap).length === 0) loadTargetMap();
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // resolve os alvos vinculados (targetId → Target) ao abrir a aba de alvos
+  useAuthedFetch<Target[]>(tab === "alvos" ? `/api/defense/targets` : null, {
+    initial: [],
+    onSuccess: all => setTargetMap(Object.fromEntries(all.map(t => [t.id, t]))),
+  });
 
   async function patchCase(body: object) {
     const token = await getToken();
@@ -588,62 +552,21 @@ export default function CasoDetailPage({ params }: RouteParams) {
               </div>
 
               {/* Busca-autocomplete */}
-              <div className="form-field" style={{ position: "relative", marginBottom: 16 }}>
-                <label className="form-label">Adicionar alvo (busque por nome, apelido ou CPF)</label>
-                <input
-                  type="text"
-                  value={tgtSearch}
-                  onChange={e => searchTargets(e.target.value)}
+              <div style={{ marginBottom: 16 }}>
+                <EntitySearchSelect<Target>
+                  label="Adicionar alvo (busque por nome, apelido ou CPF)"
                   placeholder="Digite para buscar na base de alvos…"
-                  className="form-input"
-                  autoComplete="off"
+                  searchUrl={q => `/api/defense/targets?search=${encodeURIComponent(q)}`}
+                  getKey={t => t.id}
+                  getPrimary={t => t.fullName}
+                  getSecondary={t => `${t.cpf ?? "sem CPF"}${t.aliases.length > 0 ? ` · ${t.aliases[0]}` : ""}`}
+                  isSelected={t => editTargets.some(l => l.targetId === t.id)}
+                  selectedLabel="já vinculado"
+                  onSelect={t => {
+                    setEditTargets(prev => [...prev, { targetId: t.id, role: "outro" }]);
+                    setTargetMap(prev => ({ ...prev, [t.id]: t }));
+                  }}
                 />
-                {tgtSearch.trim() && (
-                  <div style={{
-                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4,
-                    background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-md)",
-                    boxShadow: "var(--shadow-md)", maxHeight: 280, overflowY: "auto",
-                  }}>
-                    {searchingTgt ? (
-                      <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Buscando…</p>
-                    ) : tgtResults.length === 0 ? (
-                      <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum alvo encontrado.</p>
-                    ) : (
-                      tgtResults.map(t => {
-                        const already = editTargets.some(l => l.targetId === t.id);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            disabled={already}
-                            onClick={() => {
-                              if (already) return;
-                              setEditTargets(prev => [...prev, { targetId: t.id, role: "outro" }]);
-                              setTargetMap(prev => ({ ...prev, [t.id]: t }));
-                              setTgtSearch(""); setTgtResults([]);
-                            }}
-                            style={{
-                              display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-                              padding: "10px 14px", border: "none", borderBottom: "1px solid var(--line)",
-                              background: "none", cursor: already ? "default" : "pointer", opacity: already ? 0.5 : 1,
-                              fontFamily: "var(--font-ui)",
-                            }}
-                          >
-                            <span style={{ flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", display: "block" }}>{t.fullName}</span>
-                              <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
-                                {t.cpf ?? "sem CPF"}{t.aliases.length > 0 ? ` · ${t.aliases[0]}` : ""}
-                              </span>
-                            </span>
-                            {already
-                              ? <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>já vinculado</span>
-                              : <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>+ vincular</span>}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
               </div>
 
               {editTargets.length === 0 ? (
