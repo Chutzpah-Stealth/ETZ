@@ -57,5 +57,6 @@ CLAUDE.md
 
 # Firebase — manter local, não expor estrutura de regras publicamente
 firestore.rules
+firestore.indexes.json
 firebase.json
 .firebaserc
