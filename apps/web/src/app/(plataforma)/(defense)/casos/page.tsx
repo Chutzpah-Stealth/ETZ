@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
+import { useConfirm } from "../../../components/ConfirmDialog";
 import type { Case, CaseStatus, ClassificationLevel } from "@etz/shared-types";
 import { CASE_STATUS_LABEL, CLASSIFICATION_LABEL } from "@etz/shared-types";
 
@@ -32,6 +33,7 @@ const TH: React.CSSProperties = {
 
 export default function CasosPage() {
   const router = useRouter();
+  const { confirm, ConfirmUI } = useConfirm();
   const [cases, setCases]         = useState<Case[]>([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
@@ -60,7 +62,13 @@ export default function CasosPage() {
   useEffect(() => { fetchCases(); }, [fetchCases]);
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Excluir caso "${name}"? Esta ação é irreversível.`)) return;
+    const ok = await confirm({
+      title: "Excluir caso",
+      message: `Tem certeza que deseja excluir o caso "${name}"? Esta ação é irreversível.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       const token = await getToken();
@@ -76,6 +84,7 @@ export default function CasosPage() {
 
   return (
     <div style={{ maxWidth: 1260, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
+      {ConfirmUI}
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>

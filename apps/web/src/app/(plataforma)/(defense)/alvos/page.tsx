@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
+import { useConfirm } from "../../../components/ConfirmDialog";
 import type { Target, TargetStatus, RiskLevel } from "@etz/shared-types";
 import { TARGET_STATUS_LABEL, RISK_LEVEL_LABEL } from "@etz/shared-types";
 
@@ -115,6 +116,7 @@ const TH_STYLE: React.CSSProperties = {
 
 export default function AlvosPage() {
   const router = useRouter();
+  const { confirm, ConfirmUI } = useConfirm();
   const [targets, setTargets]   = useState<Target[]>([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
@@ -145,7 +147,13 @@ export default function AlvosPage() {
   useEffect(() => { fetchTargets(); }, [fetchTargets]);
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Excluir "${name}"? Esta ação é irreversível.`)) return;
+    const ok = await confirm({
+      title: "Excluir alvo",
+      message: `Tem certeza que deseja excluir "${name}"? Esta ação é irreversível.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       const token = await getToken();
@@ -161,6 +169,7 @@ export default function AlvosPage() {
 
   return (
     <div style={{ maxWidth: 1260, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
+      {ConfirmUI}
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>

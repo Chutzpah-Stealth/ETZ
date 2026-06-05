@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getToken } from "../../../../lib/auth";
+import { useConfirm } from "../../../components/ConfirmDialog";
 import type { UserProfile, Institution } from "@etz/shared-types";
 
 const AVAILABLE_ROLES = [
@@ -23,6 +24,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function UsuariosPage() {
+  const { confirm, ConfirmUI } = useConfirm();
   const [users, setUsers]               = useState<UserProfile[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [units, setUnits]               = useState<Record<string, { id: string; name: string }[]>>({});
@@ -88,7 +90,13 @@ export default function UsuariosPage() {
   }
 
   async function handleDelete(uid: string) {
-    if (!confirm("Tem certeza que deseja excluir este usuário? Esta ação é irreversível.")) return;
+    const ok = await confirm({
+      title: "Excluir usuário",
+      message: "Tem certeza que deseja excluir este usuário? Esta ação é irreversível.",
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     const token = await getToken();
     await fetch(`/api/admin/users/${uid}`, {
       method: "DELETE",
@@ -99,6 +107,7 @@ export default function UsuariosPage() {
 
   return (
     <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
+      {ConfirmUI}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
         <div>
           <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>

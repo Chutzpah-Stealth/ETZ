@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../../lib/auth";
+import { useConfirm } from "../../../../components/ConfirmDialog";
 import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   Case, CaseStatus, ClassificationLevel, Target, RiskLevel, TargetStatus,
@@ -77,6 +78,7 @@ function ChipsField({ label, values, onChange, placeholder }: {
 export default function CasoDetailPage({ params }: RouteParams) {
   const { id } = use(params);
   const router  = useRouter();
+  const { confirm, ConfirmUI } = useConfirm();
 
   const [caso, setCaso]         = useState<Case | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -86,11 +88,17 @@ export default function CasoDetailPage({ params }: RouteParams) {
 
   const isDirty = useRef(false);
 
-  function handleBack() {
-    if (!isDirty.current || window.confirm("Há alterações não salvas nesta aba. Deseja sair sem salvar?")) {
-      isDirty.current = false;
-      router.push("/casos");
+  async function handleBack() {
+    if (isDirty.current) {
+      const ok = await confirm({
+        title: "Sair sem salvar?",
+        message: "Há alterações não salvas nesta aba. Se sair agora, elas serão perdidas.",
+        confirmLabel: "Sair sem salvar",
+      });
+      if (!ok) return;
     }
+    isDirty.current = false;
+    router.push("/casos");
   }
 
   // Tab 1
@@ -354,7 +362,14 @@ export default function CasoDetailPage({ params }: RouteParams) {
   }
 
   async function handleDelete() {
-    if (!caso || !confirm(`Excluir caso "${caso.name}"? Esta ação é irreversível.`)) return;
+    if (!caso) return;
+    const ok = await confirm({
+      title: "Excluir caso",
+      message: `Tem certeza que deseja excluir o caso "${caso.name}"? Esta ação é irreversível.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(true);
     try {
       const token = await getToken();
@@ -380,6 +395,7 @@ export default function CasoDetailPage({ params }: RouteParams) {
 
   return (
     <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 0 }}>
+      {ConfirmUI}
 
       {/* Header */}
       <div className="target-detail-header">
