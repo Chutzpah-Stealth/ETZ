@@ -584,10 +584,11 @@ img, svg { display: block; }
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 56px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   align-items: center;
-  padding: 0 20px;
+  padding: env(safe-area-inset-top, 0px) clamp(12px, 4vw, 20px) 0;
   z-index: 51;
   gap: 12px;
 }
@@ -596,7 +597,8 @@ img, svg { display: block; }
   display: flex;
   flex-direction: column;
   position: fixed;
-  top: 56px; left: 0; bottom: 0;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 0; bottom: 0;
   width: 240px;
   background: var(--surface);
   border-right: 1px solid var(--line);
@@ -604,12 +606,14 @@ img, svg { display: block; }
   transform: translateX(-100%);
   transition: transform 0.22s cubic-bezier(.2,.5,.2,1);
   overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .defense-sidebar.open { transform: translateX(0); }
 
 .defense-drawer-overlay {
   position: fixed;
-  top: 56px; left: 0; right: 0; bottom: 0;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 0; right: 0; bottom: 0;
   background: rgba(20,24,31,0.3);
   z-index: 49;
   opacity: 0;
@@ -623,14 +627,15 @@ img, svg { display: block; }
 @media (min-width: 1024px) { .defense-drawer-overlay { display: none; } }
 
 .defense-main {
-  padding: 72px 20px 40px;
-  min-height: 100vh;
+  padding: calc(56px + env(safe-area-inset-top, 0px) + 16px) clamp(12px, 4vw, 20px) max(40px, env(safe-area-inset-bottom, 0px));
+  min-height: 100dvh;
   transition: margin-left 0.22s cubic-bezier(.2,.5,.2,1), padding 0.22s cubic-bezier(.2,.5,.2,1);
 }
 @media (min-width: 1024px) {
   .defense-main.open {
     margin-left: 240px;
-    padding: 72px 40px 40px;
+    padding-left: clamp(20px, 4vw, 40px);
+    padding-right: clamp(20px, 4vw, 40px);
   }
 }
 
@@ -640,6 +645,7 @@ img, svg { display: block; }
   align-items: center;
   gap: 9px;
   padding: 9px 14px;
+  min-height: 44px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-600);
@@ -1829,4 +1835,44 @@ table.data td.mono { font-family: var(--font-mono); color: var(--ink-500); }
 /* Feat grid — garantir leitura em mobile */
 @media (max-width: 480px) {
   .feat { padding: 16px; gap: 12px; }
+}
+
+/* ─── Mobile-first: plataforma (alvos/casos) ─── */
+
+/* h1 das páginas internas escala suave */
+.defense-main h1 {
+  font-size: clamp(22px, 5vw, 29px);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Filtros — full-width em telas estreitas, evita campos espremidos */
+@media (max-width: 520px) {
+  .defense-main .form-field { flex: 1 1 100% !important; }
+}
+
+/* Cards de listagem (alvos/casos) — nomes e textos longos quebram em vez de overflow */
+.targets-cards p,
+.casos-cards p,
+.targets-cards span,
+.casos-cards span {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+/* Botões de ação dos cards (Ver perfil / Excluir) — alvo de toque mínimo 44px */
+.targets-cards a,
+.targets-cards button,
+.casos-cards a,
+.casos-cards button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Role pill da topbar — encurta em telas muito pequenas */
+@media (max-width: 380px) {
+  .defense-role-pill { display: none; }
 }

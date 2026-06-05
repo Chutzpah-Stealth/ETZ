@@ -113,7 +113,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   if (!ready) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--canvas)" }}>
 
       {/* Topbar */}
       <header className="defense-topbar">
@@ -152,7 +152,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
 
         {/* Role pill — mono uppercase */}
         {role && (
-          <span style={{
+          <span className="defense-role-pill" style={{
             fontSize: 10,
             fontFamily: "var(--font-mono)",
             fontWeight: 500,

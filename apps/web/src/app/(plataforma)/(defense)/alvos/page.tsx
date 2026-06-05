@@ -160,7 +160,7 @@ export default function AlvosPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1260, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 1260, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
