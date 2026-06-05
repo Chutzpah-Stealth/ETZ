@@ -13,6 +13,7 @@ claude.md
 .env
 .env.local
 .env.*.local
+# .env.example é intencional no git — documenta as variáveis sem valores
 
 # Logs
 logs/
