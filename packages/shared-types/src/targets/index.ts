@@ -125,9 +125,8 @@ export interface Target {
   riskLevel:       RiskLevel | null;
   classification:  ClassificationLevel | null;
 
-  // Notas e vínculos
+  // Notas
   analystNotes:    string | null;
-  caseId:          string | null;
 
   // Mídia
   photos:          string[];

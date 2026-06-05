@@ -41,21 +41,6 @@ export const CASE_TARGET_ROLE_LABEL: Record<CaseTargetRole, string> = {
   outro:         "Outro",
 };
 
-export type CaseTargetPriority = "alto" | "medio" | "baixo";
-export const CASE_TARGET_PRIORITY_LABEL: Record<CaseTargetPriority, string> = {
-  alto:  "Alto",
-  medio: "Médio",
-  baixo: "Baixo",
-};
-
-export type CaseTargetStatus = "monitorado" | "preso" | "foragido" | "sem_localizacao";
-export const CASE_TARGET_STATUS_LABEL: Record<CaseTargetStatus, string> = {
-  monitorado:      "Monitorado",
-  preso:           "Preso",
-  foragido:        "Foragido",
-  sem_localizacao: "Sem Localização",
-};
-
 export type LocationType =
   | "residencia"
   | "empresa"
@@ -103,20 +88,14 @@ export interface PenalTypification {
   law?:    string;
 }
 
-export interface CaseTarget {
-  targetId?:     string;
-  name:          string;
-  motherName?:   string;
-  fatherName?:   string;
-  alias?:        string;
-  cpf?:          string;
-  birthDate?:    string;
-  role:          CaseTargetRole;
-  priority:      CaseTargetPriority;
-  currentStatus: CaseTargetStatus;
-  city?:         string;
-  state?:        string;
-  address?:      string;
+/**
+ * Vínculo N→N entre um alvo (módulo Alvos) e um caso.
+ * targetId referencia o alvo real; role é a função do alvo NESTE caso.
+ * Um alvo pode constar em vários casos simultaneamente.
+ */
+export interface CaseTargetLink {
+  targetId: string;
+  role:     CaseTargetRole;
 }
 
 export interface CaseLocation {
@@ -202,7 +181,7 @@ export interface Case {
   penalTypifications:  PenalTypification[];
 
   // Alvos & Locais
-  caseTargets: CaseTarget[];
+  caseTargets: CaseTargetLink[];
   locations:   CaseLocation[];
 
   // Modus Operandi

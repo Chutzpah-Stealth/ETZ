@@ -7,14 +7,14 @@ import { getToken } from "../../../../../lib/auth";
 import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   Case, CaseStatus, ClassificationLevel, Target, RiskLevel, TargetStatus,
-  InvestigationOrigin, CaseTargetRole, CaseTargetPriority, CaseTargetStatus,
+  InvestigationOrigin, CaseTargetRole,
   LocationType, EvidenceType, IntelProductType, ConfidenceLevel,
-  PenalTypification, CaseTarget, CaseLocation, CaseRelationship,
+  PenalTypification, CaseTargetLink, CaseLocation, CaseRelationship,
 } from "@etz/shared-types";
 import {
   CASE_STATUS_LABEL, CLASSIFICATION_LABEL, RISK_LEVEL_LABEL, TARGET_STATUS_LABEL,
-  INVESTIGATION_ORIGIN_LABEL, CASE_TARGET_ROLE_LABEL, CASE_TARGET_PRIORITY_LABEL,
-  CASE_TARGET_STATUS_LABEL, LOCATION_TYPE_LABEL, EVIDENCE_TYPE_LABEL,
+  INVESTIGATION_ORIGIN_LABEL, CASE_TARGET_ROLE_LABEL,
+  LOCATION_TYPE_LABEL, EVIDENCE_TYPE_LABEL,
   INTEL_PRODUCT_LABEL, CONFIDENCE_LABEL,
 } from "@etz/shared-types";
 
@@ -38,19 +38,6 @@ const TARGET_STATUS_COLOR: Record<TargetStatus, { color: string; bg: string }> =
   indiciado:   { color: "#d2731a", bg: "#fdf0e0" },
   preso:       { color: "#49515f", bg: "#e8ebf0" },
   foragido:    { color: "#c4392f", bg: "#fbe8e6" },
-};
-
-const CASE_TGT_STATUS_COLOR: Record<CaseTargetStatus, { color: string; bg: string }> = {
-  monitorado:      { color: "#0f8f8f", bg: "#e0f5f5" },
-  preso:           { color: "#49515f", bg: "#e8ebf0" },
-  foragido:        { color: "#c4392f", bg: "#fbe8e6" },
-  sem_localizacao: { color: "#8a909d", bg: "#f1f3f6" },
-};
-
-const PRIORITY_COLOR: Record<CaseTargetPriority, { color: string; bg: string }> = {
-  alto:  { color: "#c4392f", bg: "#fbe8e6" },
-  medio: { color: "#b5740d", bg: "#fbf0db" },
-  baixo: { color: "#1f8a52", bg: "#e7f4ec" },
 };
 
 const COMM_OPTIONS = ["WhatsApp", "Telegram", "Signal", "Ligações", "E-mail", "Rádio", "Criptografado"];
@@ -132,16 +119,18 @@ export default function CasoDetailPage({ params }: RouteParams) {
   const [typLaw, setTypLaw]             = useState("");
   const [savingCtx, setSavingCtx]       = useState(false);
 
-  // Tab 3
-  const [editTargets, setEditTargets]   = useState<CaseTarget[]>([]);
+  // Tab 3 — alvos do caso (vínculos N→N) + locais
+  const [editTargets, setEditTargets]   = useState<CaseTargetLink[]>([]);
   const [editLocations, setEditLocs]    = useState<CaseLocation[]>([]);
-  const [showTgtForm, setShowTgtForm]   = useState(false);
   const [showLocForm, setShowLocForm]   = useState(false);
-  const [newTgt, setNewTgt]             = useState<Partial<CaseTarget>>({ role: "outro", priority: "medio", currentStatus: "sem_localizacao" });
   const [newLoc, setNewLoc]             = useState<Partial<CaseLocation>>({ type: "outro", relatedTargetIds: [] });
-  const [linkedTargets, setLinkedTargets] = useState<Target[]>([]);
-  const [loadingTargets, setLoadingT]   = useState(false);
   const [savingAlvos, setSavingAlvos]   = useState(false);
+  // mapa targetId → Target (resolve nome/cpf/status/risco dos alvos vinculados)
+  const [targetMap, setTargetMap]       = useState<Record<string, Target>>({});
+  // busca-autocomplete de alvos
+  const [tgtSearch, setTgtSearch]       = useState("");
+  const [tgtResults, setTgtResults]     = useState<Target[]>([]);
+  const [searchingTgt, setSearchingTgt] = useState(false);
 
   // Tab 4
   const [editComm, setEditComm]       = useState<string[]>([]);
@@ -219,20 +208,35 @@ export default function CasoDetailPage({ params }: RouteParams) {
     finally { setLoading(false); }
   }
 
-  async function loadTargets() {
-    if (loadingTargets) return;
-    setLoadingT(true);
+  // resolve os alvos vinculados (targetId → Target) para exibir nome/cpf/status/risco
+  async function loadTargetMap() {
     try {
       const token = await getToken();
-      const res = await fetch(`/api/defense/targets?caseId=${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setLinkedTargets(res.ok ? await res.json() : []);
-    } catch { setLinkedTargets([]); }
-    finally { setLoadingT(false); }
+      const res = await fetch(`/api/defense/targets`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const all: Target[] = await res.json();
+      const map: Record<string, Target> = {};
+      for (const t of all) map[t.id] = t;
+      setTargetMap(map);
+    } catch { /* mantém mapa anterior */ }
+  }
+
+  // busca-autocomplete de alvos por nome/apelido/CPF
+  async function searchTargets(q: string) {
+    setTgtSearch(q);
+    if (!q.trim()) { setTgtResults([]); return; }
+    setSearchingTgt(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/defense/targets?search=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
+      setTgtResults(res.ok ? await res.json() : []);
+    } catch { setTgtResults([]); }
+    finally { setSearchingTgt(false); }
   }
 
   useEffect(() => { loadCase(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (tab === "alvos" && linkedTargets.length === 0 && !loadingTargets) loadTargets();
+    if (tab === "alvos" && Object.keys(targetMap).length === 0) loadTargetMap();
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function patchCase(body: object) {
@@ -560,92 +564,109 @@ export default function CasoDetailPage({ params }: RouteParams) {
         {/* ── Tab 3: Alvos & Locais ── */}
         {tab === "alvos" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {/* Alvos do Caso (manual) */}
+            {/* Alvos do Caso — vínculo N→N com a base de alvos */}
             <div className="form-section">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
                 <p className="form-section-title" style={{ marginBottom: 0 }}>Alvos do Caso</p>
-                <button onClick={() => setShowTgtForm(v => !v)} className="btn-secondary btn-primary--sm">
-                  {showTgtForm ? "Cancelar" : "+ Adicionar alvo"}
-                </button>
+                <Link href="/alvos/novo" className="btn-secondary btn-primary--sm">+ Cadastrar novo alvo</Link>
               </div>
-              {showTgtForm && (
-                <div style={{ background: "var(--surface-2)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, marginBottom: 16 }}>
-                  <div className="form-row form-row-2">
-                    <div className="form-field">
-                      <label className="form-label">Nome *</label>
-                      <input type="text" value={newTgt.name ?? ""} onChange={e => setNewTgt(p => ({ ...p, name: e.target.value }))} className="form-input" placeholder="Nome completo" />
-                    </div>
-                    <div className="form-field">
-                      <label className="form-label">Alcunha</label>
-                      <input type="text" value={newTgt.alias ?? ""} onChange={e => setNewTgt(p => ({ ...p, alias: e.target.value }))} className="form-input" placeholder="Apelido" />
-                    </div>
+
+              {/* Busca-autocomplete */}
+              <div className="form-field" style={{ position: "relative", marginBottom: 16 }}>
+                <label className="form-label">Adicionar alvo (busque por nome, apelido ou CPF)</label>
+                <input
+                  type="text"
+                  value={tgtSearch}
+                  onChange={e => searchTargets(e.target.value)}
+                  placeholder="Digite para buscar na base de alvos…"
+                  className="form-input"
+                  autoComplete="off"
+                />
+                {tgtSearch.trim() && (
+                  <div style={{
+                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4,
+                    background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-md)",
+                    boxShadow: "var(--shadow-md)", maxHeight: 280, overflowY: "auto",
+                  }}>
+                    {searchingTgt ? (
+                      <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Buscando…</p>
+                    ) : tgtResults.length === 0 ? (
+                      <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum alvo encontrado.</p>
+                    ) : (
+                      tgtResults.map(t => {
+                        const already = editTargets.some(l => l.targetId === t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            disabled={already}
+                            onClick={() => {
+                              if (already) return;
+                              setEditTargets(prev => [...prev, { targetId: t.id, role: "outro" }]);
+                              setTargetMap(prev => ({ ...prev, [t.id]: t }));
+                              setTgtSearch(""); setTgtResults([]);
+                            }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                              padding: "10px 14px", border: "none", borderBottom: "1px solid var(--line)",
+                              background: "none", cursor: already ? "default" : "pointer", opacity: already ? 0.5 : 1,
+                              fontFamily: "var(--font-ui)",
+                            }}
+                          >
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", display: "block" }}>{t.fullName}</span>
+                              <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
+                                {t.cpf ?? "sem CPF"}{t.aliases.length > 0 ? ` · ${t.aliases[0]}` : ""}
+                              </span>
+                            </span>
+                            {already
+                              ? <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>já vinculado</span>
+                              : <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>+ vincular</span>}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
-                  <div className="form-row form-row-2">
-                    <div className="form-field">
-                      <label className="form-label">Função</label>
-                      <select value={newTgt.role ?? "outro"} onChange={e => setNewTgt(p => ({ ...p, role: e.target.value as CaseTargetRole }))} className="form-input form-select">
-                        {Object.entries(CASE_TARGET_ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </div>
-                    <div className="form-field">
-                      <label className="form-label">Prioridade</label>
-                      <select value={newTgt.priority ?? "medio"} onChange={e => setNewTgt(p => ({ ...p, priority: e.target.value as CaseTargetPriority }))} className="form-input form-select">
-                        {Object.entries(CASE_TARGET_PRIORITY_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-row form-row-2">
-                    <div className="form-field">
-                      <label className="form-label">Status</label>
-                      <select value={newTgt.currentStatus ?? "sem_localizacao"} onChange={e => setNewTgt(p => ({ ...p, currentStatus: e.target.value as CaseTargetStatus }))} className="form-input form-select">
-                        {Object.entries(CASE_TARGET_STATUS_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-                    </div>
-                    <div className="form-field">
-                      <label className="form-label">Cidade / UF</label>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <input type="text" value={newTgt.city ?? ""} onChange={e => setNewTgt(p => ({ ...p, city: e.target.value }))} className="form-input" placeholder="Cidade" style={{ flex: 2 }} />
-                        <input type="text" value={newTgt.state ?? ""} onChange={e => setNewTgt(p => ({ ...p, state: e.target.value }))} className="form-input" placeholder="UF" style={{ flex: 1 }} maxLength={2} />
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-                    <button type="button" onClick={() => { setShowTgtForm(false); setNewTgt({ role: "outro", priority: "medio", currentStatus: "sem_localizacao" }); }} className="btn-secondary btn-primary--sm">Cancelar</button>
-                    <button type="button" onClick={() => {
-                      if (!newTgt.name?.trim()) return;
-                      setEditTargets(prev => [...prev, newTgt as CaseTarget]);
-                      setNewTgt({ role: "outro", priority: "medio", currentStatus: "sem_localizacao" });
-                      setShowTgtForm(false);
-                    }} className="btn-primary btn-primary--sm">Adicionar</button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+
               {editTargets.length === 0 ? (
-                <p style={{ fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)", textAlign: "center", padding: "20px 0" }}>Nenhum alvo adicionado ao caso.</p>
+                <p style={{ fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)", textAlign: "center", padding: "20px 0" }}>Nenhum alvo vinculado ao caso.</p>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table className="data" style={{ width: "100%" }}>
                     <thead>
-                      <tr><th>Nome</th><th>Alcunha</th><th>Função</th><th>Prioridade</th><th>Status</th><th>Cidade/UF</th><th style={{ width: 1 }}></th></tr>
+                      <tr><th>Alvo</th><th>CPF</th><th>Status</th><th>Risco</th><th>Função no caso</th><th style={{ width: 1 }}></th></tr>
                     </thead>
                     <tbody>
-                      {editTargets.map((t, i) => {
-                        const prioC = PRIORITY_COLOR[t.priority];
-                        const statC = CASE_TGT_STATUS_COLOR[t.currentStatus];
+                      {editTargets.map((link, i) => {
+                        const t = targetMap[link.targetId];
+                        const statC = t?.status ? TARGET_STATUS_COLOR[t.status] : null;
+                        const riskC = t?.riskLevel ? RISK_COLOR[t.riskLevel] : null;
                         return (
-                          <tr key={i}>
-                            <td style={{ fontWeight: 600, fontSize: 13 }}>{t.name}</td>
-                            <td>{t.alias ? <span style={{ fontSize: 12, color: "var(--ink-500)" }}>{t.alias}</span> : <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
-                            <td><span className="chip" style={{ fontSize: 11 }}>{CASE_TARGET_ROLE_LABEL[t.role]}</span></td>
-                            <td>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.09em", color: prioC.color, background: prioC.bg, padding: "2px 8px", borderRadius: 999 }}>
-                                <span style={{ width: 5, height: 5, borderRadius: "50%", background: prioC.color }} />{CASE_TARGET_PRIORITY_LABEL[t.priority]}
-                              </span>
+                          <tr key={link.targetId}>
+                            <td style={{ fontWeight: 600, fontSize: 13 }}>
+                              {t ? (
+                                <Link href={`/alvos/${t.id}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{t.fullName}</Link>
+                              ) : (
+                                <span style={{ color: "var(--ink-400)" }}>Alvo removido</span>
+                              )}
                             </td>
-                            <td><span style={{ fontSize: 11, color: statC.color, background: statC.bg, padding: "2px 8px", borderRadius: 999 }}>{CASE_TARGET_STATUS_LABEL[t.currentStatus]}</span></td>
-                            <td style={{ fontSize: 12, color: "var(--ink-500)" }}>{t.city || t.state ? `${t.city ?? ""}${t.city && t.state ? "/" : ""}${t.state ?? ""}` : <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
+                            <td style={{ fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>{t?.cpf ?? <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
+                            <td>{statC && t?.status ? <span style={{ fontSize: 11, color: statC.color, background: statC.bg, padding: "2px 8px", borderRadius: 999 }}>{TARGET_STATUS_LABEL[t.status]}</span> : <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
+                            <td>{riskC && t?.riskLevel ? <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.09em", color: riskC.color, background: riskC.bg, padding: "2px 8px", borderRadius: 999 }}><span style={{ width: 5, height: 5, borderRadius: "50%", background: riskC.color }} />{RISK_LEVEL_LABEL[t.riskLevel]}</span> : <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
                             <td>
-                              <button onClick={() => setEditTargets(prev => prev.filter((_, j) => j !== i))} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "2px 8px", cursor: "pointer" }}>×</button>
+                              <select
+                                value={link.role}
+                                onChange={e => setEditTargets(prev => prev.map((l, j) => j === i ? { ...l, role: e.target.value as CaseTargetRole } : l))}
+                                className="form-input form-select"
+                                style={{ height: 32, fontSize: 12, minWidth: 130 }}
+                              >
+                                {Object.entries(CASE_TARGET_ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                              </select>
+                            </td>
+                            <td>
+                              <button onClick={() => setEditTargets(prev => prev.filter((_, j) => j !== i))} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "4px 9px", cursor: "pointer" }}>×</button>
                             </td>
                           </tr>
                         );
@@ -722,55 +743,6 @@ export default function CasoDetailPage({ params }: RouteParams) {
                       <button onClick={() => setEditLocs(prev => prev.filter((_, j) => j !== i))} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "2px 8px", cursor: "pointer", flexShrink: 0 }}>×</button>
                     </div>
                   ))}
-                </div>
-              )}
-            </div>
-
-            {/* Alvos vinculados do módulo Alvos */}
-            <div className="form-section">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                <p className="form-section-title" style={{ marginBottom: 0 }}>Alvos Vinculados</p>
-                <Link href="/alvos" className="btn-secondary btn-primary--sm">Gerenciar alvos</Link>
-              </div>
-              <p style={{ fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-ui)", marginBottom: 12 }}>Perfis do módulo Alvos com este caso referenciado.</p>
-              {loadingTargets ? (
-                <p style={{ fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Carregando…</p>
-              ) : linkedTargets.length === 0 ? (
-                <p style={{ fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)", textAlign: "center", padding: "12px 0" }}>Nenhum alvo vinculado.</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {linkedTargets.map(t => {
-                    const riskC = t.riskLevel ? RISK_COLOR[t.riskLevel] : null;
-                    const statC = t.status ? TARGET_STATUS_COLOR[t.status] : null;
-                    return (
-                      <Link key={t.id} href={`/alvos/${t.id}`} className="target-card">
-                        <div className="photo">
-                          {t.photos?.[0] ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={t.photos[0]} alt={t.fullName} />
-                          ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink-300)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="8" r="4.5"/><path d="M3 21c0-4.5 4-8 9-8s9 3.5 9 8"/>
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="name">{t.fullName}</p>
-                          <div className="meta">
-                            {statC && t.status && <span style={{ color: statC.color, background: statC.bg, fontSize: 11, padding: "2px 8px", borderRadius: 999, fontFamily: "var(--font-ui)", fontWeight: 500 }}>{TARGET_STATUS_LABEL[t.status]}</span>}
-                            {t.cpf && <span className="id">{t.cpf}</span>}
-                          </div>
-                        </div>
-                        <div className="right">
-                          {riskC && t.riskLevel && (
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: riskC.color, background: riskC.bg, fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.09em", padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
-                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: riskC.color }} />{RISK_LEVEL_LABEL[t.riskLevel]}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    );
-                  })}
                 </div>
               )}
             </div>

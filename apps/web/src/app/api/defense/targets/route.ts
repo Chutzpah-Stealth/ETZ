@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   const search  = searchParams.get("search")?.toLowerCase() ?? "";
   const status  = searchParams.get("status") ?? "";
   const risk    = searchParams.get("risk") ?? "";
-  const caseId  = searchParams.get("caseId") ?? "";
 
   const query = adminDb.collection("targets").where("unitId", "==", user.unitId);
 
@@ -28,7 +27,6 @@ export async function GET(req: NextRequest) {
   }
   if (status) targets = targets.filter(t => t.status === status);
   if (risk)   targets = targets.filter(t => t.riskLevel === risk);
-  if (caseId) targets = targets.filter(t => t.caseId === caseId);
 
   return NextResponse.json(targets);
 }
@@ -104,7 +102,6 @@ export async function POST(req: NextRequest) {
     classification:  body.classification  ?? null,
 
     analystNotes:    body.analystNotes    ?? null,
-    caseId:          body.caseId          ?? null,
 
     photos:          body.photos          ?? [],
     tattooImages:    body.tattooImages    ?? [],
