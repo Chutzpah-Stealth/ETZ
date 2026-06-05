@@ -55,6 +55,7 @@ temp/
 # Claude Code
 skills-lock.json
 CLAUDE.md
+.agents/
 
 # Firebase — manter local, não expor estrutura de regras publicamente
 firestore.rules
