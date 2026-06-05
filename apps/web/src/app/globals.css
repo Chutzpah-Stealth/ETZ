@@ -804,6 +804,35 @@ img, svg { display: block; }
   padding-right: 32px;
 }
 
+/* ─── Inputs de data/hora — normaliza renderização no iOS Safari ─── */
+/* Sem isto, o controle nativo do iOS ignora height:38px e fica mais alto + desalinhado */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 38px;
+  line-height: 1.2;
+}
+/* alinha o valor à esquerda e remove margens internas nativas (iOS) */
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+/* centraliza verticalmente o texto do campo no iOS */
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit,
+input[type="datetime-local"]::-webkit-datetime-edit {
+  padding: 0;
+  line-height: 38px;
+}
+/* mantém o ícone do calendário visível e clicável */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+}
+
 /* ─── Tabela compartilhada ─── */
 
 .table-header-mono {
