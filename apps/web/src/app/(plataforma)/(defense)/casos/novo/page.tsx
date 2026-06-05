@@ -114,7 +114,7 @@ export default function NovoCasoPage() {
   }
 
   return (
-    <div style={{ maxWidth: 800, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 800, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>

@@ -375,7 +375,7 @@ export default function CasoDetailPage({ params }: RouteParams) {
   ];
 
   return (
-    <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 0 }}>
+    <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 0 }}>
 
       {/* Header */}
       <div className="target-detail-header">
@@ -384,7 +384,7 @@ export default function CasoDetailPage({ params }: RouteParams) {
             <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>
               ETZ Defense · Casos{caso.caseNumber && <span style={{ color: "var(--ink-400)", marginLeft: 8 }}>· {caso.caseNumber}</span>}
             </p>
-            <h1 style={{ fontSize: 22, marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{caso.name}</h1>
+            <h1 style={{ fontSize: "clamp(19px, 4.5vw, 22px)", marginBottom: 8, overflowWrap: "break-word", wordBreak: "break-word" }}>{caso.name}</h1>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
               <span className="status" data-s={caso.status}>{CASE_STATUS_LABEL[caso.status]}</span>
               {caso.classification && <span className="cls" data-c={CLS_MAP[caso.classification]}>{CLASSIFICATION_LABEL[caso.classification]}</span>}
