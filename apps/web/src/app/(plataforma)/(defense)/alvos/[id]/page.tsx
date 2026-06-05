@@ -267,7 +267,7 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
   const E = editMode; /* shorthand */
 
   return (
-    <div style={{ maxWidth: 900, display: "flex", flexDirection: "column" }}>
+    <div style={{ maxWidth: 900, width: "100%", display: "flex", flexDirection: "column" }}>
 
       {/* ── Header card ── */}
       <div className="target-detail-header">
@@ -277,7 +277,7 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
             <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 4 }}>
               ETZ Defense / Alvos
             </p>
-            <h1 style={{ fontSize: 22, fontFamily: "var(--font-display)", fontWeight: 700, letterSpacing: "-0.018em", color: "var(--ink-900)", lineHeight: 1.15 }}>
+            <h1 style={{ fontSize: "clamp(19px, 4.5vw, 22px)", fontFamily: "var(--font-display)", fontWeight: 700, letterSpacing: "-0.018em", color: "var(--ink-900)", lineHeight: 1.15, overflowWrap: "break-word", wordBreak: "break-word" }}>
               {E ? editState.fullName || "—" : target.fullName}
             </h1>
             {(E ? editState.aliases : target.aliases).length > 0 && (
@@ -1011,14 +1011,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function InfoGrid({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px 24px" }}>{children}</div>;
+  return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(140px, 100%), 1fr))", gap: "12px 24px" }}>{children}</div>;
 }
 
 function InfoItem({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) {
   return (
     <div>
       <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--ink-500)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 3 }}>{label}</p>
-      <p style={{ fontSize: 13, color: value ? "var(--ink-700)" : "var(--ink-300)", fontFamily: mono ? "var(--font-mono)" : "var(--font-ui)" }}>{value ?? "—"}</p>
+      <p style={{ fontSize: 13, color: value ? "var(--ink-700)" : "var(--ink-300)", fontFamily: mono ? "var(--font-mono)" : "var(--font-ui)", overflowWrap: "break-word", wordBreak: "break-word" }}>{value ?? "—"}</p>
     </div>
   );
 }
@@ -1027,7 +1027,7 @@ function InfoText({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--ink-500)", textTransform: "uppercase", letterSpacing: "0.09em", marginBottom: 6 }}>{label}</p>
-      <p style={{ fontSize: 14, color: "var(--ink-700)", fontFamily: "var(--font-ui)", lineHeight: 1.65 }}>{value}</p>
+      <p style={{ fontSize: 14, color: "var(--ink-700)", fontFamily: "var(--font-ui)", lineHeight: 1.65, overflowWrap: "break-word", wordBreak: "break-word" }}>{value}</p>
     </div>
   );
 }

@@ -226,17 +226,17 @@ export default function NovoAlvoPage() {
   }
 
   return (
-    <div style={{ maxWidth: 860, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 860, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "var(--blue)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
-            Alvos
+          <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 4 }}>
+            ETZ Defense · Alvos
           </p>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink)" }}>Novo Alvo</h1>
+          <h1 style={{ fontSize: "clamp(22px, 5vw, 29px)" }}>Novo Alvo</h1>
         </div>
-        <Link href="/alvos" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>← Voltar</Link>
+        <Link href="/alvos" className="btn-secondary btn-primary--sm">← Voltar</Link>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -302,7 +302,7 @@ export default function NovoAlvoPage() {
         <section className="form-section">
           <p className="form-section-title">Tatuagens / Marcas</p>
           {form.tattoos.map((t, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
               <div className="form-row form-row-2" style={{ flex: 1 }}>
                 <FormField label="Descrição">
                   <input className="form-input" placeholder="Ex: Dragão" value={t.description} onChange={e => updateTattoo(i, "description", e.target.value)} />
@@ -399,7 +399,7 @@ export default function NovoAlvoPage() {
         <section className="form-section">
           <p className="form-section-title">Pessoas Vinculadas</p>
           {form.associates.map((a, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
               <div className="form-row form-row-3" style={{ flex: 1 }}>
                 <FormField label="Nome">
                   <input className="form-input" placeholder="Nome da pessoa" value={a.name} onChange={e => updateAssociate(i, "name", e.target.value)} />
@@ -426,7 +426,7 @@ export default function NovoAlvoPage() {
         <section className="form-section">
           <p className="form-section-title">Mandados de Prisão</p>
           {form.warrants.map((w, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
               <div className="form-row form-row-2" style={{ flex: 1 }}>
                 <FormField label="Número do Mandado">
                   <input className="form-input" placeholder="0000000-00.0000.0.00.0000" value={w.number} onChange={e => updateWarrant(i, "number", e.target.value)} />
@@ -552,18 +552,18 @@ export default function NovoAlvoPage() {
         </section>
 
         {error && (
-          <p style={{ fontSize: 13, color: "#c0392b", background: "#fdf2f1", border: "1px solid #f5c6c2", borderRadius: "var(--radius-md)", padding: "10px 14px" }}>
+          <p style={{ fontSize: 13, color: "var(--danger)", background: "var(--danger-tint)", border: "1px solid #f5c6c2", borderRadius: "var(--r-sm)", padding: "10px 14px", fontFamily: "var(--font-ui)" }}>
             {error}
           </p>
         )}
 
-        <div style={{ display: "flex", gap: 12, paddingBottom: 40 }}>
-          <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, opacity: loading ? 0.7 : 1 }}>
-            {loading ? "Salvando…" : "Criar Alvo"}
-          </button>
-          <Link href="/alvos" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "14px 26px", fontSize: 15, fontWeight: 500, color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--rule)", borderRadius: "var(--radius-pill)", textDecoration: "none", textAlign: "center" }}>
+        <div className="form-submit-row" style={{ display: "flex", gap: 12, paddingBottom: 40 }}>
+          <Link href="/alvos" className="btn-secondary" style={{ flex: 1, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
             Cancelar
           </Link>
+          <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, minHeight: 44, opacity: loading ? 0.7 : 1 }}>
+            {loading ? "Salvando…" : "Criar Alvo"}
+          </button>
         </div>
       </form>
     </div>
@@ -580,15 +580,14 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 }
 
 const removeStyle: React.CSSProperties = {
-  marginTop: 22,
   flexShrink: 0,
-  width: 28, height: 28,
+  width: 36, height: 36,
   background: "none",
-  border: "1px solid var(--rule)",
-  borderRadius: "var(--radius-md)",
+  border: "1px solid var(--line-strong)",
+  borderRadius: "var(--r-sm)",
   cursor: "pointer",
   fontSize: 16,
-  color: "var(--muted)",
+  color: "var(--ink-500)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -597,13 +596,14 @@ const removeStyle: React.CSSProperties = {
 
 const addBtnStyle: React.CSSProperties = {
   background: "none",
-  border: "1px dashed var(--rule)",
-  borderRadius: "var(--radius-md)",
-  color: "var(--blue)",
+  border: "1px dashed var(--line-strong)",
+  borderRadius: "var(--r-sm)",
+  color: "var(--accent)",
   fontSize: 13,
   fontWeight: 500,
-  padding: "8px 14px",
+  padding: "10px 14px",
+  minHeight: 44,
   cursor: "pointer",
-  fontFamily: "inherit",
+  fontFamily: "var(--font-ui)",
   alignSelf: "flex-start",
 };
