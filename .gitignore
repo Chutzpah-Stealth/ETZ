@@ -54,3 +54,8 @@ pnpm-lock.yaml
 # Claude Code
 skills-lock.json
 CLAUDE.md
+
+# Firebase — manter local, não expor estrutura de regras publicamente
+firestore.rules
+firebase.json
+.firebaserc
