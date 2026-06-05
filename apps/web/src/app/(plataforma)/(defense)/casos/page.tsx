@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
@@ -8,6 +8,8 @@ import { useAuthedFetch } from "../../../../lib/useAuthedFetch";
 import { useConfirm } from "../../../components/ConfirmDialog";
 import type { Case, ClassificationLevel } from "@etz/shared-types";
 import { CASE_STATUS_LABEL, CLASSIFICATION_LABEL } from "@etz/shared-types";
+
+const CLASSIFICATIONS = Object.entries(CLASSIFICATION_LABEL) as [ClassificationLevel, string][];
 
 const CLS_MAP: Record<ClassificationLevel, string> = {
   confidencial:       "conf",
@@ -35,17 +37,39 @@ const TH: React.CSSProperties = {
 export default function CasosPage() {
   const router = useRouter();
   const { confirm, ConfirmUI } = useConfirm();
-  const [search, setSearch]       = useState("");
-  const [statusFilter, setStatus] = useState("");
   const [deleting, setDeleting]   = useState<string | null>(null);
 
-  const params = new URLSearchParams();
-  if (search)       params.set("search", search);
-  if (statusFilter) params.set("status", statusFilter);
-  const { data: cases, loading, refetch } = useAuthedFetch<Case[]>(
-    `/api/defense/cases?${params.toString()}`,
+  // Carrega todos os casos da unidade uma vez; filtros aplicados em memória.
+  const { data: allCases, loading, refetch } = useAuthedFetch<Case[]>(
+    "/api/defense/cases",
     { initial: [] },
   );
+
+  // ── Filtros estruturados ──
+  const [search, setSearch]       = useState("");   // nome / nº do caso
+  const [statusFilter, setStatus] = useState("");
+  const [clsFilter, setCls]       = useState("");
+  const [areaFilter, setArea]     = useState("");
+
+  const areaOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of allCases) for (const a of c.operationAreas ?? []) set.add(a);
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [allCases]);
+
+  const cases = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allCases.filter(c => {
+      if (q && !(c.name.toLowerCase().includes(q) || (c.caseNumber ?? "").toLowerCase().includes(q))) return false;
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (clsFilter && c.classification !== clsFilter) return false;
+      if (areaFilter && !(c.operationAreas ?? []).includes(areaFilter)) return false;
+      return true;
+    });
+  }, [allCases, search, statusFilter, clsFilter, areaFilter]);
+
+  const hasFilters = !!(search || statusFilter || clsFilter || areaFilter);
+  function clearFilters() { setSearch(""); setStatus(""); setCls(""); setArea(""); }
 
   async function handleDelete(id: string, name: string) {
     const ok = await confirm({
@@ -99,13 +123,13 @@ export default function CasosPage() {
           <label className="form-label">Buscar</label>
           <input
             type="text"
-            placeholder="Nome do caso…"
+            placeholder="Nome ou número do caso…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="form-input"
           />
         </div>
-        <div className="form-field" style={{ flex: "0 1 180px" }}>
+        <div className="form-field" style={{ flex: "0 1 170px" }}>
           <label className="form-label">Status</label>
           <select value={statusFilter} onChange={e => setStatus(e.target.value)} className="form-input form-select">
             <option value="">Todos</option>
@@ -114,6 +138,27 @@ export default function CasosPage() {
             ))}
           </select>
         </div>
+        <div className="form-field" style={{ flex: "0 1 180px" }}>
+          <label className="form-label">Classificação</label>
+          <select value={clsFilter} onChange={e => setCls(e.target.value)} className="form-input form-select">
+            <option value="">Todas</option>
+            {CLASSIFICATIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+        {areaOptions.length > 0 && (
+          <div className="form-field" style={{ flex: "0 1 180px" }}>
+            <label className="form-label">Área de Atuação</label>
+            <select value={areaFilter} onChange={e => setArea(e.target.value)} className="form-input form-select">
+              <option value="">Todas</option>
+              {areaOptions.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+        )}
+        {hasFilters && (
+          <button onClick={clearFilters} className="btn-secondary btn-primary--sm" style={{ flexShrink: 0 }}>
+            Limpar filtros
+          </button>
+        )}
       </div>
 
       {/* Tabela */}
@@ -135,11 +180,13 @@ export default function CasosPage() {
               </svg>
             </div>
             <p>
-              {search || statusFilter
+              {hasFilters
                 ? "Nenhum caso encontrado para os filtros aplicados."
                 : "Nenhum caso cadastrado ainda."}
             </p>
-            {!search && !statusFilter && (
+            {hasFilters ? (
+              <button onClick={clearFilters} className="btn-secondary btn-primary--sm">Limpar filtros</button>
+            ) : (
               <Link href="/casos/novo" className="btn-primary btn-primary--sm">
                 Criar primeiro caso
               </Link>
@@ -291,7 +338,9 @@ export default function CasosPage() {
 
       {!loading && cases.length > 0 && (
         <p style={{ fontSize: 12, color: "var(--ink-400)", textAlign: "right", fontFamily: "var(--font-mono)" }}>
-          {cases.length} {cases.length === 1 ? "caso" : "casos"}
+          {hasFilters
+            ? `${cases.length} de ${allCases.length} ${allCases.length === 1 ? "caso" : "casos"}`
+            : `${cases.length} ${cases.length === 1 ? "caso" : "casos"}`}
         </p>
       )}
     </div>

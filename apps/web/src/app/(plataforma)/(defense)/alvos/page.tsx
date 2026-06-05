@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
@@ -118,19 +118,55 @@ const TH_STYLE: React.CSSProperties = {
 export default function AlvosPage() {
   const router = useRouter();
   const { confirm, ConfirmUI } = useConfirm();
-  const [search, setSearch]     = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [riskFilter, setRiskFilter]     = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const params = new URLSearchParams();
-  if (search)       params.set("search", search);
-  if (statusFilter) params.set("status", statusFilter);
-  if (riskFilter)   params.set("risk", riskFilter);
-  const { data: targets, loading, refetch } = useAuthedFetch<Target[]>(
-    `/api/defense/targets?${params.toString()}`,
+  // Carrega todos os alvos da unidade uma vez; os filtros são aplicados em memória.
+  const { data: allTargets, loading, refetch } = useAuthedFetch<Target[]>(
+    "/api/defense/targets",
     { initial: [] },
   );
+
+  // ── Filtros estruturados ──
+  const [search, setSearch]             = useState("");   // nome / apelido
+  const [statusFilter, setStatusFilter] = useState("");
+  const [riskFilter, setRiskFilter]     = useState("");
+  const [cityFilter, setCityFilter]     = useState("");
+  const [orgFilter, setOrgFilter]       = useState("");
+  const [cpf, setCpf]                   = useState("");   // CPF exato
+
+  const onlyDigits = (s: string) => s.replace(/\D/g, "");
+
+  // opções dinâmicas derivadas dos dados carregados
+  const cityOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of allTargets) for (const a of t.addresses ?? []) if (a.city) set.add(a.city);
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [allTargets]);
+
+  const orgOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of allTargets) for (const o of t.organizations ?? []) set.add(o);
+    return [...set].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [allTargets]);
+
+  const targets = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const cpfDigits = onlyDigits(cpf);
+    return allTargets.filter(t => {
+      if (q && !(t.fullName.toLowerCase().includes(q) || t.aliases.some(a => a.toLowerCase().includes(q)))) return false;
+      if (statusFilter && t.status !== statusFilter) return false;
+      if (riskFilter && t.riskLevel !== riskFilter) return false;
+      if (cityFilter && !(t.addresses ?? []).some(a => a.city === cityFilter)) return false;
+      if (orgFilter && !(t.organizations ?? []).includes(orgFilter)) return false;
+      if (cpfDigits && onlyDigits(t.cpf ?? "") !== cpfDigits) return false;
+      return true;
+    });
+  }, [allTargets, search, statusFilter, riskFilter, cityFilter, orgFilter, cpf]);
+
+  const hasFilters = !!(search || statusFilter || riskFilter || cityFilter || orgFilter || cpf);
+  function clearFilters() {
+    setSearch(""); setStatusFilter(""); setRiskFilter(""); setCityFilter(""); setOrgFilter(""); setCpf("");
+  }
 
   async function handleDelete(id: string, name: string) {
     const ok = await confirm({
@@ -194,13 +230,24 @@ export default function AlvosPage() {
           <label className="form-label">Buscar</label>
           <input
             type="text"
-            placeholder="Nome, apelido ou CPF…"
+            placeholder="Nome ou apelido…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="form-input"
           />
         </div>
-        <div className="form-field" style={{ flex: "0 1 160px" }}>
+        <div className="form-field" style={{ flex: "0 1 150px" }}>
+          <label className="form-label">CPF</label>
+          <input
+            type="text"
+            placeholder="CPF exato"
+            value={cpf}
+            onChange={e => setCpf(e.target.value)}
+            className="form-input"
+            inputMode="numeric"
+          />
+        </div>
+        <div className="form-field" style={{ flex: "0 1 150px" }}>
           <label className="form-label">Status</label>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="form-input form-select">
             <option value="">Todos</option>
@@ -214,6 +261,33 @@ export default function AlvosPage() {
             {Object.entries(RISK_LEVEL_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
+        {cityOptions.length > 0 && (
+          <div className="form-field" style={{ flex: "0 1 170px" }}>
+            <label className="form-label">Cidade</label>
+            <select value={cityFilter} onChange={e => setCityFilter(e.target.value)} className="form-input form-select">
+              <option value="">Todas</option>
+              {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+        {orgOptions.length > 0 && (
+          <div className="form-field" style={{ flex: "0 1 190px" }}>
+            <label className="form-label">Organização</label>
+            <select value={orgFilter} onChange={e => setOrgFilter(e.target.value)} className="form-input form-select">
+              <option value="">Todas</option>
+              {orgOptions.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+        )}
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="btn-secondary btn-primary--sm"
+            style={{ flexShrink: 0 }}
+          >
+            Limpar filtros
+          </button>
+        )}
       </div>
 
       {/* Tabela / Cards */}
@@ -242,11 +316,13 @@ export default function AlvosPage() {
               </svg>
             </div>
             <p style={{ fontSize: 14, color: "var(--ink-500)", fontFamily: "var(--font-ui)" }}>
-              {search || statusFilter || riskFilter
+              {hasFilters
                 ? "Nenhum alvo encontrado para os filtros aplicados."
                 : "Nenhum alvo cadastrado ainda."}
             </p>
-            {!search && !statusFilter && !riskFilter && (
+            {hasFilters ? (
+              <button onClick={clearFilters} className="btn-secondary btn-primary--sm">Limpar filtros</button>
+            ) : (
               <Link href="/alvos/novo" className="btn-primary btn-primary--sm">
                 Cadastrar primeiro alvo
               </Link>
@@ -439,7 +515,9 @@ export default function AlvosPage() {
 
       {!loading && targets.length > 0 && (
         <p style={{ fontSize: 12, color: "var(--ink-400)", textAlign: "right", fontFamily: "var(--font-mono)" }}>
-          {targets.length} {targets.length === 1 ? "alvo" : "alvos"}
+          {hasFilters
+            ? `${targets.length} de ${allTargets.length} ${allTargets.length === 1 ? "alvo" : "alvos"}`
+            : `${targets.length} ${targets.length === 1 ? "alvo" : "alvos"}`}
         </p>
       )}
     </div>
