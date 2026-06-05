@@ -50,3 +50,7 @@ temp/
 
 # pnpm
 pnpm-lock.yaml
+
+# Claude Code
+skills-lock.json
+CLAUDE.md
