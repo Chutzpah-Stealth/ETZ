@@ -21,7 +21,7 @@ export default function Hero() {
             </p>
 
             <div className="hero-cta">
-              <a href="#contato" className="btn btn--primary btn--lg">
+              <a href="https://calendly.com/hanielrolemberg" target="_blank" rel="noopener noreferrer" className="btn btn--primary btn--lg">
                 <CalendarCheck size={16} />
                 Solicitar demonstração
               </a>

@@ -38,7 +38,7 @@ export default function LandingFooter() {
             <h5>Instituição</h5>
             <a href="#">Sobre</a>
             <a href="#">Conformidade</a>
-            <a href="#contato">Contato</a>
+            <a href="mailto:contact@hanielrolemberg.com">Contato</a>
             <a href="#">Suporte</a>
           </div>
 
