@@ -163,6 +163,7 @@ export default function AdminOverviewPage() {
                 })}
               </div>
 
+              <div className="table-scroll">
               <table className="audit-table">
                 <thead>
                   <tr>
@@ -204,6 +205,7 @@ export default function AdminOverviewPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             </>
           )}
         </div>

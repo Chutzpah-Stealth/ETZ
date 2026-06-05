@@ -578,6 +578,9 @@ img, svg { display: block; }
 .audit-table { display: none; }
 .audit-cards { display: flex; flex-direction: column; }
 
+/* wrapper de scroll horizontal das tabelas admin — evita corte por overflow:hidden do card */
+.table-scroll { display: contents; }
+
 @media (min-width: 640px) {
   .overview-stats {
     grid-template-columns: repeat(4, 1fr);
@@ -585,7 +588,15 @@ img, svg { display: block; }
   }
   .audit-table { display: table; width: 100%; border-collapse: collapse; }
   .audit-cards { display: none; }
+  /* no desktop o wrapper vira contêiner de scroll horizontal */
+  .table-scroll { display: block; overflow-x: auto; overscroll-behavior-x: contain; }
 }
+
+/* Botões de ação dos cards mobile admin — toque mínimo 44px */
+.audit-cards button,
+.audit-cards a { min-height: 44px; }
+.audit-cards p,
+.audit-cards span { overflow-wrap: break-word; }
 
 /* ─── Defense platform layout ─── */
 

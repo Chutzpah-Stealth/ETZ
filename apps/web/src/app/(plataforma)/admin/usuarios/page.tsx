@@ -118,6 +118,7 @@ export default function UsuariosPage() {
         ) : (
           <>
             {/* Desktop table */}
+            <div className="table-scroll">
             <table className="audit-table">
               <thead>
                 <tr>
@@ -178,6 +179,7 @@ export default function UsuariosPage() {
                 })}
               </tbody>
             </table>
+            </div>
 
             {/* Mobile cards */}
             <div className="audit-cards">

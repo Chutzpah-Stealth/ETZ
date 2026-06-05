@@ -42,6 +42,7 @@ export default function AuditoriaPage() {
         ) : (
           <>
             {/* Desktop table */}
+            <div className="table-scroll">
             <table className="audit-table">
               <thead>
                 <tr>
@@ -74,6 +75,7 @@ export default function AuditoriaPage() {
                 ))}
               </tbody>
             </table>
+            </div>
 
             {/* Mobile cards */}
             <div className="audit-cards">
