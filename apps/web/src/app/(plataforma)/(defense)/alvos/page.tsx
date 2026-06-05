@@ -339,7 +339,7 @@ export default function AlvosPage() {
                   <th style={TH_STYLE}>CPF</th>
                   <th style={TH_STYLE}>Status</th>
                   <th style={TH_STYLE}>Nome da Mãe</th>
-                  <th style={TH_STYLE}>Atualizado</th>
+                  <th style={TH_STYLE}>Nível de Risco</th>
                   <th style={{ ...TH_STYLE, width: 1 }}></th>
                 </tr>
               </thead>
@@ -376,8 +376,8 @@ export default function AlvosPage() {
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--ink-600)", fontFamily: "var(--font-ui)" }}>
                       {t.motherName ?? <span style={{ fontSize: 12, color: "var(--ink-300)" }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 12, color: "var(--ink-400)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                      {new Date(t.updatedAt).toLocaleDateString("pt-BR")}
+                    <td style={{ padding: "12px 16px" }}>
+                      {t.riskLevel ? <RiskBadge level={t.riskLevel} /> : <span style={{ fontSize: 12, color: "var(--ink-300)" }}>—</span>}
                     </td>
                     <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: 6 }}>
