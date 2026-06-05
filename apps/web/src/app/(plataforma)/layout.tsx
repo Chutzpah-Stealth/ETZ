@@ -11,15 +11,22 @@ export default function PlataformaLayout({ children }: { children: React.ReactNo
 
   useEffect(() => {
     return onAuthChange((user) => {
+      // usuário autenticado na tela de login → redireciona para dashboard
+      if (user && pathname === "/login") {
+        router.replace("/dashboard");
+        return;
+      }
+      // usuário não autenticado fora do login → redireciona para login
       if (!user && pathname !== "/login") {
         router.replace("/login");
-      } else {
-        setReady(true);
+        return;
       }
+      setReady(true);
     });
   }, [pathname, router]);
 
-  if (!ready) return null;
+  // /login não precisa aguardar auth — renderiza imediatamente
+  if (!ready && pathname !== "/login") return null;
 
   return <>{children}</>;
 }
