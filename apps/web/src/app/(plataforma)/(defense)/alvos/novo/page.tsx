@@ -6,11 +6,13 @@ import Link from "next/link";
 import { getToken } from "../../../../../lib/auth";
 import { ImageUploader } from "../../_components/ImageUploader";
 import type {
-  TargetStatus, RiskLevel, ClassificationLevel, LinkType,
+  TargetStatus, RiskLevel, ClassificationLevel,
   TargetAddress, TargetTattoo, TargetAssociate, TargetCriminalRecord, TargetWarrant,
+  Case, CaseTargetRole,
 } from "@etz/shared-types";
 import {
   TARGET_STATUS_LABEL, RISK_LEVEL_LABEL, CLASSIFICATION_LABEL, LINK_TYPE_LABEL,
+  CASE_STATUS_LABEL, CASE_TARGET_ROLE_LABEL,
 } from "@etz/shared-types";
 
 type FormState = {
@@ -77,6 +79,24 @@ export default function NovoAlvoPage() {
   const [vehicleImages, setVehicleImages] = useState<string[]>([]);
   const [addressImages, setAddressImages] = useState<string[]>([]);
   const [attachments, setAttachments]     = useState<string[]>([]);
+
+  // Casos a vincular após criar o alvo (N→N)
+  const [caseLinks, setCaseLinks]   = useState<{ caseId: string; name: string; role: CaseTargetRole }[]>([]);
+  const [caseSearch, setCaseSearch] = useState("");
+  const [caseResults, setCaseResults] = useState<Case[]>([]);
+  const [searchingCase, setSearchingCase] = useState(false);
+
+  async function searchCases(q: string) {
+    setCaseSearch(q);
+    if (!q.trim()) { setCaseResults([]); return; }
+    setSearchingCase(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/defense/cases?search=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
+      setCaseResults(res.ok ? await res.json() : []);
+    } catch { setCaseResults([]); }
+    finally { setSearchingCase(false); }
+  }
 
   function set(key: keyof FormState, value: unknown) {
     setForm(f => ({ ...f, [key]: value }));
@@ -217,6 +237,18 @@ export default function NovoAlvoPage() {
       }
 
       const created = await res.json();
+
+      // vincula o alvo recém-criado aos casos selecionados (N→N)
+      if (caseLinks.length > 0) {
+        await Promise.all(caseLinks.map(link =>
+          fetch(`/api/defense/cases/${link.caseId}/targets`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ targetId: created.id, role: link.role }),
+          })
+        ));
+      }
+
       router.push(`/alvos/${created.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao criar alvo");
@@ -535,6 +567,97 @@ export default function NovoAlvoPage() {
               onRemove={(i: number) => setAttachments(p => p.filter((_, idx) => idx !== i))}
             />
           </FormField>
+        </section>
+
+        {/* Casos Vinculados */}
+        <section className="form-section">
+          <p className="form-section-title">Casos Vinculados</p>
+          <div className="form-field" style={{ position: "relative" }}>
+            <label className="form-label">Vincular a casos existentes (busque pelo nome)</label>
+            <input
+              type="text"
+              value={caseSearch}
+              onChange={e => searchCases(e.target.value)}
+              placeholder="Digite para buscar casos da unidade…"
+              className="form-input"
+              autoComplete="off"
+            />
+            {caseSearch.trim() && (
+              <div style={{
+                position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4,
+                background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-md)",
+                boxShadow: "var(--shadow-md)", maxHeight: 280, overflowY: "auto",
+              }}>
+                {searchingCase ? (
+                  <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Buscando…</p>
+                ) : caseResults.length === 0 ? (
+                  <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum caso encontrado.</p>
+                ) : (
+                  caseResults.map(c => {
+                    const already = caseLinks.some(l => l.caseId === c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        disabled={already}
+                        onClick={() => {
+                          if (already) return;
+                          setCaseLinks(prev => [...prev, { caseId: c.id, name: c.name, role: "outro" }]);
+                          setCaseSearch(""); setCaseResults([]);
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                          padding: "10px 14px", border: "none", borderBottom: "1px solid var(--line)",
+                          background: "none", cursor: already ? "default" : "pointer", opacity: already ? 0.5 : 1,
+                          fontFamily: "var(--font-ui)",
+                        }}
+                      >
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", display: "block" }}>{c.name}</span>
+                          <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
+                            {c.caseNumber ?? "sem número"} · {CASE_STATUS_LABEL[c.status]}
+                          </span>
+                        </span>
+                        {already
+                          ? <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>selecionado</span>
+                          : <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>+ vincular</span>}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          {caseLinks.length > 0 && (
+            <div style={{ overflowX: "auto", marginTop: 4 }}>
+              <table className="data" style={{ width: "100%" }}>
+                <thead>
+                  <tr><th>Caso</th><th>Função no caso</th><th style={{ width: 1 }}></th></tr>
+                </thead>
+                <tbody>
+                  {caseLinks.map((l, i) => (
+                    <tr key={l.caseId}>
+                      <td style={{ fontWeight: 600, fontSize: 13 }}>{l.name}</td>
+                      <td>
+                        <select
+                          value={l.role}
+                          onChange={e => setCaseLinks(prev => prev.map((x, j) => j === i ? { ...x, role: e.target.value as CaseTargetRole } : x))}
+                          className="form-input form-select"
+                          style={{ height: 32, fontSize: 12, minWidth: 130 }}
+                        >
+                          {Object.entries(CASE_TARGET_ROLE_LABEL).map(([v, lbl]) => <option key={v} value={v}>{lbl}</option>)}
+                        </select>
+                      </td>
+                      <td>
+                        <button type="button" onClick={() => setCaseLinks(prev => prev.filter((_, j) => j !== i))} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "4px 9px", cursor: "pointer" }}>×</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* Notas do Analista */}

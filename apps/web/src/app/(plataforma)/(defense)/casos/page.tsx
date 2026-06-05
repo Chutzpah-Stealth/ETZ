@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getToken } from "../../../../lib/auth";
 import { useConfirm } from "../../../components/ConfirmDialog";
-import type { Case, CaseStatus, ClassificationLevel } from "@etz/shared-types";
+import type { Case, ClassificationLevel } from "@etz/shared-types";
 import { CASE_STATUS_LABEL, CLASSIFICATION_LABEL } from "@etz/shared-types";
 
 const CLS_MAP: Record<ClassificationLevel, string> = {

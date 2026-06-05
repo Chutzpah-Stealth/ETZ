@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
   if (user instanceof NextResponse) return user;
 
   const { searchParams } = new URL(req.url);
-  const search = searchParams.get("search")?.toLowerCase() ?? "";
-  const status = searchParams.get("status") ?? "";
+  const search   = searchParams.get("search")?.toLowerCase() ?? "";
+  const status   = searchParams.get("status") ?? "";
+  const targetId = searchParams.get("targetId") ?? "";
 
   const snap = await adminDb
     .collection("cases")
@@ -20,8 +21,9 @@ export async function GET(req: NextRequest) {
 
   let cases = snap.docs.map(d => ({ id: d.id, ...d.data() } as Case));
 
-  if (search) cases = cases.filter(c => c.name.toLowerCase().includes(search));
-  if (status) cases = cases.filter(c => c.status === status);
+  if (search)   cases = cases.filter(c => c.name.toLowerCase().includes(search));
+  if (status)   cases = cases.filter(c => c.status === status);
+  if (targetId) cases = cases.filter(c => (c.caseTargets ?? []).some(l => l.targetId === targetId));
 
   return NextResponse.json(cases);
 }

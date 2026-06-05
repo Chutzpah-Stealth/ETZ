@@ -7,9 +7,11 @@ import { ImageUploader } from "../../_components/ImageUploader";
 import type {
   Target, TargetStatus, RiskLevel, ClassificationLevel, LinkType,
   TargetAddress, TargetTattoo, TargetAssociate, TargetCriminalRecord, TargetWarrant,
+  Case, CaseTargetRole,
 } from "@etz/shared-types";
 import {
   TARGET_STATUS_LABEL, RISK_LEVEL_LABEL, CLASSIFICATION_LABEL, LINK_TYPE_LABEL,
+  CASE_STATUS_LABEL, CASE_TARGET_ROLE_LABEL,
 } from "@etz/shared-types";
 
 const STATUS_STYLE: Record<TargetStatus, { color: string; bg: string }> = {
@@ -84,13 +86,14 @@ type EditState = {
   attachments: string[];
 };
 
-type TabId = "basico" | "documentos" | "contatos" | "criminal" | "penitenciario" | "analise" | "anexos";
+type TabId = "basico" | "documentos" | "contatos" | "criminal" | "casos" | "penitenciario" | "analise" | "anexos";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "basico",        label: "Informações básicas" },
   { id: "documentos",    label: "Documentos"          },
   { id: "contatos",      label: "Contatos"            },
   { id: "criminal",      label: "Criminal"            },
+  { id: "casos",         label: "Casos"               },
   { id: "penitenciario", label: "Penitenciário"       },
   { id: "analise",       label: "Análise"             },
   { id: "anexos",        label: "Anexos"              },
@@ -164,6 +167,71 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
 
   const set = <K extends keyof EditState>(key: K, value: EditState[K]) =>
     setEditState(s => ({ ...s, [key]: value }));
+
+  // ── Casos vinculados (N→N pelo lado do alvo) ──
+  const [linkedCases, setLinkedCases]   = useState<Case[]>([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+  const [caseSearch, setCaseSearch]     = useState("");
+  const [caseResults, setCaseResults]   = useState<Case[]>([]);
+  const [searchingCase, setSearchingCase] = useState(false);
+  const [linkBusy, setLinkBusy]         = useState(false);
+
+  async function loadLinkedCases() {
+    setLoadingCases(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/defense/cases?targetId=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setLinkedCases(res.ok ? await res.json() : []);
+    } catch { setLinkedCases([]); }
+    finally { setLoadingCases(false); }
+  }
+
+  async function searchCases(q: string) {
+    setCaseSearch(q);
+    if (!q.trim()) { setCaseResults([]); return; }
+    setSearchingCase(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/defense/cases?search=${encodeURIComponent(q.trim())}`, { headers: { Authorization: `Bearer ${token}` } });
+      setCaseResults(res.ok ? await res.json() : []);
+    } catch { setCaseResults([]); }
+    finally { setSearchingCase(false); }
+  }
+
+  async function linkCase(caseId: string, role: CaseTargetRole) {
+    setLinkBusy(true);
+    try {
+      const token = await getToken();
+      await fetch(`/api/defense/cases/${caseId}/targets`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ targetId: id, role }),
+      });
+      setCaseSearch(""); setCaseResults([]);
+      await loadLinkedCases();
+    } finally { setLinkBusy(false); }
+  }
+
+  async function unlinkCase(caseId: string) {
+    setLinkBusy(true);
+    try {
+      const token = await getToken();
+      await fetch(`/api/defense/cases/${caseId}/targets`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ targetId: id }),
+      });
+      await loadLinkedCases();
+    } finally { setLinkBusy(false); }
+  }
+
+  function roleOf(c: Case): CaseTargetRole {
+    return (c.caseTargets ?? []).find(l => l.targetId === id)?.role ?? "outro";
+  }
+
+  useEffect(() => {
+    if (activeTab === "casos") loadLinkedCases();
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
@@ -552,6 +620,112 @@ export default function AlvoDetailPage({ params }: { params: Promise<{ id: strin
               }
             </Section>
           </>
+        )}
+
+        {/* ══ CASOS ══ */}
+        {activeTab === "casos" && (
+          <Section title="Casos Vinculados">
+            {/* Busca-autocomplete de casos — só no modo de edição */}
+            {E && (
+            <div className="form-field" style={{ position: "relative", marginBottom: 4 }}>
+              <label className="form-label">Vincular a um caso (busque pelo nome)</label>
+              <input
+                type="text"
+                value={caseSearch}
+                onChange={e => searchCases(e.target.value)}
+                placeholder="Digite para buscar casos da unidade…"
+                className="form-input"
+                autoComplete="off"
+              />
+              {caseSearch.trim() && (
+                <div style={{
+                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4,
+                  background: "var(--surface)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-md)",
+                  boxShadow: "var(--shadow-md)", maxHeight: 280, overflowY: "auto",
+                }}>
+                  {searchingCase ? (
+                    <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Buscando…</p>
+                  ) : caseResults.length === 0 ? (
+                    <p style={{ padding: "12px 14px", fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhum caso encontrado.</p>
+                  ) : (
+                    caseResults.map(c => {
+                      const already = linkedCases.some(lc => lc.id === c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          disabled={already || linkBusy}
+                          onClick={() => { if (!already) linkCase(c.id, "outro"); }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
+                            padding: "10px 14px", border: "none", borderBottom: "1px solid var(--line)",
+                            background: "none", cursor: already ? "default" : "pointer", opacity: already ? 0.5 : 1,
+                            fontFamily: "var(--font-ui)",
+                          }}
+                        >
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-800)", display: "block" }}>{c.name}</span>
+                            <span style={{ fontSize: 11, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>
+                              {c.caseNumber ?? "sem número"} · {CASE_STATUS_LABEL[c.status]}
+                            </span>
+                          </span>
+                          {already
+                            ? <span style={{ fontSize: 11, color: "var(--ink-400)", fontFamily: "var(--font-mono)" }}>já vinculado</span>
+                            : <span style={{ fontSize: 11, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>+ vincular</span>}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+            )}
+
+            {loadingCases ? (
+              <p style={{ fontSize: 14, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Carregando…</p>
+            ) : linkedCases.length === 0 ? (
+              <EmptyInline message={E ? "Use a busca acima para vincular este alvo a um caso." : "Este alvo não está vinculado a nenhum caso."} />
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="data" style={{ width: "100%" }}>
+                  <thead>
+                    <tr><th>Caso</th><th>Nº</th><th>Status</th><th>Função no caso</th>{E && <th style={{ width: 1 }}></th>}</tr>
+                  </thead>
+                  <tbody>
+                    {linkedCases.map(c => (
+                      <tr key={c.id}>
+                        <td style={{ fontWeight: 600, fontSize: 13 }}>
+                          <Link href={`/casos/${c.id}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{c.name}</Link>
+                        </td>
+                        <td style={{ fontSize: 12, color: "var(--ink-500)", fontFamily: "var(--font-mono)" }}>{c.caseNumber ?? <span style={{ color: "var(--ink-300)" }}>—</span>}</td>
+                        <td><span className="status" data-s={c.status}>{CASE_STATUS_LABEL[c.status]}</span></td>
+                        <td>
+                          {E ? (
+                            <select
+                              value={roleOf(c)}
+                              disabled={linkBusy}
+                              onChange={e => linkCase(c.id, e.target.value as CaseTargetRole)}
+                              className="form-input form-select"
+                              style={{ height: 32, fontSize: 12, minWidth: 130 }}
+                            >
+                              {Object.entries(CASE_TARGET_ROLE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                            </select>
+                          ) : (
+                            <span className="chip" style={{ fontSize: 11 }}>{CASE_TARGET_ROLE_LABEL[roleOf(c)]}</span>
+                          )}
+                        </td>
+                        {E && (
+                          <td>
+                            <button onClick={() => unlinkCase(c.id)} disabled={linkBusy} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "4px 9px", cursor: "pointer" }}>×</button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
         )}
 
         {/* ══ PENITENCIÁRIO ══ */}
