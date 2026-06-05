@@ -347,11 +347,11 @@ export default function CasoDetailPage({ params }: RouteParams) {
       {/* Header */}
       <div className="target-detail-header">
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 10, paddingBottom: 14 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: "1 1 240px", minWidth: 0 }}>
             <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>
               ETZ Defense · Casos{caso.caseNumber && <span style={{ color: "var(--ink-400)", marginLeft: 8 }}>· {caso.caseNumber}</span>}
             </p>
-            <h1 style={{ fontSize: "clamp(19px, 4.5vw, 22px)", marginBottom: 8, overflowWrap: "break-word", wordBreak: "break-word" }}>{caso.name}</h1>
+            <h1 style={{ fontSize: "clamp(19px, 4.5vw, 22px)", marginBottom: 8, overflowWrap: "break-word" }}>{caso.name}</h1>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
               <span className="status" data-s={caso.status}>{CASE_STATUS_LABEL[caso.status]}</span>
               {caso.classification && <span className="cls" data-c={CLS_MAP[caso.classification]}>{CLASSIFICATION_LABEL[caso.classification]}</span>}
@@ -364,16 +364,9 @@ export default function CasoDetailPage({ params }: RouteParams) {
           </div>
           <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
             <button onClick={handleBack} className="btn-secondary btn-primary--sm">← Casos</button>
-            {E ? (
-              <button onClick={cancelEdit} className="btn-secondary btn-primary--sm">Cancelar</button>
-            ) : (
-              <>
-                <button onClick={() => setEditMode(true)} className="btn-secondary btn-primary--sm">Editar</button>
-                <button onClick={handleDelete} disabled={deleting} className="btn-danger btn-primary--sm">
-                  {deleting ? "Excluindo…" : "Excluir"}
-                </button>
-              </>
-            )}
+            {E
+              ? <button onClick={cancelEdit} className="btn-secondary btn-primary--sm">Cancelar</button>
+              : <button onClick={() => setEditMode(true)} className="btn-secondary btn-primary--sm">Editar</button>}
           </div>
         </div>
         <div className="tabs" style={{ marginTop: 4 }}>
@@ -1099,6 +1092,15 @@ export default function CasoDetailPage({ params }: RouteParams) {
         <span>Atualizado em {new Date(caso.updatedAt).toLocaleDateString("pt-BR")}</span>
         {caso.responsibleBy && <><span>·</span><span>Responsável: {caso.responsibleBy}</span></>}
       </div>
+
+      {/* Exclusão — ação discreta, fora do header (só em visualização) */}
+      {!E && (
+        <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 16 }}>
+          <button onClick={handleDelete} disabled={deleting} className="btn-danger btn-primary--sm">
+            {deleting ? "Excluindo…" : "Excluir caso"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
