@@ -7,7 +7,7 @@ import { auth } from "../../../lib/firebase";
 import { db } from "../../../lib/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { ETZLogoMark } from "../../components/ETZLogo";
-import { signOut } from "../../../lib/auth";
+import { signOut, getToken } from "../../../lib/auth";
 import type { DefenseRole } from "../../../lib/defense-guard";
 
 const DEFENSE_ROLES: DefenseRole[] = ["gestor", "analista", "agente_campo"];
@@ -68,8 +68,8 @@ function IconLogOut() {
 }
 
 const NAV = [
-  { href: "/alvos", label: "Alvos", icon: IconTarget },
-  { href: "/casos", label: "Casos", icon: IconFolderSearch },
+  { href: "/alvos", label: "Alvos", icon: IconTarget,       countKey: "alvos" as const },
+  { href: "/casos", label: "Casos", icon: IconFolderSearch, countKey: "casos" as const },
 ];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +79,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole]               = useState<DefenseRole | null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null }>({ alvos: null, casos: null });
 
   useEffect(() => {
     return auth.onAuthStateChanged(async (user) => {
@@ -104,6 +105,27 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (window.innerWidth < 1024) setSidebarOpen(false);
   }, [pathname]);
+
+  // Contagem de alvos e casos da unidade — recarrega ao navegar
+  useEffect(() => {
+    if (!ready) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const headers = { Authorization: `Bearer ${token}` };
+        const [tRes, cRes] = await Promise.all([
+          fetch("/api/defense/targets", { headers }),
+          fetch("/api/defense/cases",   { headers }),
+        ]);
+        if (cancelled) return;
+        const targets = tRes.ok ? await tRes.json() : [];
+        const cases   = cRes.ok ? await cRes.json() : [];
+        setCounts({ alvos: targets.length, casos: cases.length });
+      } catch { /* mantém contagem anterior */ }
+    })();
+    return () => { cancelled = true; };
+  }, [ready, pathname]);
 
   async function handleSignOut() {
     await signOut();
@@ -196,8 +218,9 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
         </div>
 
         <nav style={{ flex: 1, padding: "8px 0", display: "flex", flexDirection: "column", gap: 1 }}>
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.map(({ href, label, icon: Icon, countKey }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
+            const count  = counts[countKey];
             return (
               <Link
                 key={href}
@@ -205,7 +228,8 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
                 className={`defense-nav-link${active ? " active" : ""}`}
               >
                 <Icon />
-                {label}
+                <span style={{ flex: 1 }}>{label}</span>
+                {count !== null && <span className="nav-count">{count}</span>}
               </Link>
             );
           })}

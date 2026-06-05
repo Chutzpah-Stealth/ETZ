@@ -695,6 +695,27 @@ img, svg { display: block; }
   border-left-color: var(--accent);
 }
 
+/* Contador na sidebar (alvos/casos) */
+.nav-count {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink-500);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: 3px 8px;
+  min-width: 24px;
+  text-align: center;
+}
+.defense-nav-link.active .nav-count {
+  color: var(--accent);
+  background: var(--accent-tint-2);
+  border-color: var(--accent-line);
+}
+
 /* ─── Targets list ─── */
 
 .targets-table { display: none; }
