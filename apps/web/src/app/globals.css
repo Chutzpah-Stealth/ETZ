@@ -1154,7 +1154,13 @@ table.data td.mono { font-family: var(--font-mono); color: var(--ink-500); }
   border-bottom: 1px solid var(--line);
   gap: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
+  /* contém o scroll horizontal: evita scroll chaining/bleeding para a página */
+  overscroll-behavior-x: contain;
+  /* restringe o gesto tátil ao eixo horizontal (sem scroll diagonal) */
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 .tabs::-webkit-scrollbar { display: none; }
 
