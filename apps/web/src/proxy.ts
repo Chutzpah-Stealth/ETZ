@@ -10,9 +10,10 @@ export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const { pathname } = req.nextUrl;
 
-  // Em desenvolvimento local (localhost sem subdomínio), libera todas as rotas
-  const isLocalDev = host === "localhost:3000" || host === "localhost";
-  if (isLocalDev) return NextResponse.next();
+  // Em desenvolvimento local ou no domínio Vercel (sem subdomínio customizado), libera todas as rotas
+  const isLocalDev   = host === "localhost:3000" || host === "localhost";
+  const isVercelDev  = host.endsWith(".vercel.app");
+  if (isLocalDev || isVercelDev) return NextResponse.next();
 
   const isAppSubdomain =
     host.startsWith("app.") ||
