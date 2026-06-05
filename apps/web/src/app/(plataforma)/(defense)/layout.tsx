@@ -28,6 +28,16 @@ function IconTarget() {
   );
 }
 
+function IconFolderSearch() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M11 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4l2 2h1"/>
+      <circle cx="17" cy="17" r="3"/>
+      <path d="m21 21-1.5-1.5"/>
+    </svg>
+  );
+}
+
 function IconMenu() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -59,6 +69,7 @@ function IconLogOut() {
 
 const NAV = [
   { href: "/alvos", label: "Alvos", icon: IconTarget },
+  { href: "/casos", label: "Casos", icon: IconFolderSearch },
 ];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {

@@ -678,6 +678,35 @@ img, svg { display: block; }
   .targets-cards { display: none; }
 }
 
+/* ─── Cases list ─── */
+
+.casos-table { display: none !important; }
+.casos-cards { display: flex; flex-direction: column; }
+
+@media (min-width: 640px) {
+  .casos-table { display: table !important; width: 100%; border-collapse: collapse; }
+  .casos-cards { display: none !important; }
+}
+
+/* ─── Timeline ─── */
+
+.timeline       { display: flex; flex-direction: column; }
+.timeline-item  { display: grid; grid-template-columns: 130px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-date  { font-family: var(--font-mono); font-size: 12px; color: var(--ink-500); padding-top: 2px; white-space: nowrap; }
+.timeline-event { font-size: 13px; color: var(--ink-700); font-family: var(--font-ui); line-height: 1.5; }
+
+/* ─── Evidence card ─── */
+
+.evidence-card  { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
+.evidence-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); border-left: 2px solid var(--accent); padding-left: 8px; margin-bottom: 10px; display: block; }
+
+/* ─── Confidence level status variants ─── */
+
+.status[data-s="conf-alto"]  { color: var(--success); background: var(--success-tint); }
+.status[data-s="conf-medio"] { color: var(--warning); background: var(--warning-tint); }
+.status[data-s="conf-baixo"] { color: var(--danger);  background: var(--danger-tint);  }
+
 /* ─── Target form ─── */
 
 .form-section {
@@ -932,6 +961,8 @@ img, svg { display: block; }
 .status[data-s="foragido"]    { color: #c4392f; background: #fbe8e6; }
 .status[data-s="monitorado"]  { color: #0f8f8f; background: #e3f5f5; }
 .status[data-s="arquivado"]   { color: #69717f; background: #f1f3f6; }
+.status[data-s="em_andamento"] { color: #2451c9; background: #eaf0fd; }
+.status[data-s="finalizado"]   { color: #1f8a52; background: #e7f4ec; }
 
 /* ─── Classificação de acesso — .cls[data-c] ─── */
 

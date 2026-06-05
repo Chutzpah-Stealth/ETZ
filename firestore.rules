@@ -38,5 +38,10 @@ service cloud.firestore {
     match /targets/{targetId} {
       allow read, write: if false;
     }
+
+    // Cases — leitura/escrita controlada pela API (Admin SDK); client não acessa diretamente
+    match /cases/{caseId} {
+      allow read, write: if false;
+    }
   }
 }
