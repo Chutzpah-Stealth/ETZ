@@ -147,6 +147,8 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
+  /* impede bounce/overscroll e scroll chaining para fora da página */
+  overscroll-behavior: none;
 }
 
 body {
@@ -156,6 +158,9 @@ body {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
+  /* corta qualquer overflow horizontal (área vazia lateral) sem quebrar position: sticky */
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* ─── Scrollbar ─── */
