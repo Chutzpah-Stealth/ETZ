@@ -106,22 +106,17 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
     if (window.innerWidth < 1024) setSidebarOpen(false);
   }, [pathname]);
 
-  // Contagem de alvos e casos da unidade — recarrega ao navegar
+  // Contagem de alvos e casos da unidade via agregação count() (~2 leituras) — recarrega ao navegar
   useEffect(() => {
     if (!ready) return;
     let cancelled = false;
     (async () => {
       try {
         const token = await getToken();
-        const headers = { Authorization: `Bearer ${token}` };
-        const [tRes, cRes] = await Promise.all([
-          fetch("/api/defense/targets", { headers }),
-          fetch("/api/defense/cases",   { headers }),
-        ]);
-        if (cancelled) return;
-        const targets = tRes.ok ? await tRes.json() : [];
-        const cases   = cRes.ok ? await cRes.json() : [];
-        setCounts({ alvos: targets.length, casos: cases.length });
+        const res = await fetch("/api/defense/counts", { headers: { Authorization: `Bearer ${token}` } });
+        if (cancelled || !res.ok) return;
+        const data = await res.json() as { alvos: number; casos: number };
+        setCounts({ alvos: data.alvos, casos: data.casos });
       } catch { /* mantém contagem anterior */ }
     })();
     return () => { cancelled = true; };
