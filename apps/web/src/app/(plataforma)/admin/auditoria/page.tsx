@@ -29,7 +29,7 @@ export default function AuditoriaPage() {
   useEffect(() => { loadMore(); }, []);
 
   return (
-    <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
         <h1>Auditoria</h1>

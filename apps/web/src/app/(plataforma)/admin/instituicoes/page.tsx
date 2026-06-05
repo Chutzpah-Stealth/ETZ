@@ -67,7 +67,7 @@ export default function InstituicoesPage() {
   }
 
   return (
-    <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
         <div>
           <p style={{ fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 500, color: "var(--accent)", letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 6 }}>Administração</p>
@@ -202,8 +202,8 @@ function ModalActions({ loading, onCancel, label }: { loading: boolean; onCancel
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "20px" }}>
-      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: 32, width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(20,24,31,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: "16px", overscrollBehavior: "contain" }}>
+      <div style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: "clamp(20px, 5vw, 32px)", width: "100%", maxWidth: 440, boxShadow: "var(--shadow-lg)", maxHeight: "90dvh", overflowY: "auto", overscrollBehavior: "contain" }}>
         <h2 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--ink-900)", marginBottom: 24 }}>{title}</h2>
         {children}
       </div>

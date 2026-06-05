@@ -122,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!ready) return null;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--canvas)" }}>
 
       {/* Topbar */}
       <header className="admin-topbar">
@@ -160,7 +160,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Super Admin badge */}
-        <span style={{
+        <span className="defense-role-pill" style={{
           fontSize: 10,
           fontFamily: "var(--font-mono)",
           fontWeight: 500,

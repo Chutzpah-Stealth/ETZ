@@ -59,7 +59,7 @@ export default function AdminOverviewPage() {
 
   return (
     <>
-      <div style={{ maxWidth: 960, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ maxWidth: 960, width: "100%", display: "flex", flexDirection: "column", gap: 24 }}>
 
         <div>
           <p style={{
