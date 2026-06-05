@@ -28,6 +28,11 @@ export const metadata: Metadata = {
   description:
     "ETZ é uma plataforma de inteligência estratégica para segurança pública e defesa nacional.",
   keywords: ["inteligência", "segurança pública", "inteligência operacional", "análise de dados"],
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
