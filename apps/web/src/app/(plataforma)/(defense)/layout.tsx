@@ -18,6 +18,17 @@ const ROLE_LABEL: Record<DefenseRole, string> = {
   agente_campo: "AGENTE DE CAMPO",
 };
 
+function IconDashboard() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="7" height="9"/>
+      <rect x="14" y="3" width="7" height="5"/>
+      <rect x="14" y="12" width="7" height="9"/>
+      <rect x="3" y="16" width="7" height="5"/>
+    </svg>
+  );
+}
+
 function IconTarget() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -79,10 +90,11 @@ function IconLogOut() {
   );
 }
 
-const NAV = [
-  { href: "/alvos", label: "Alvos", icon: IconTarget,       countKey: "alvos" as const },
-  { href: "/casos", label: "Casos", icon: IconFolderSearch, countKey: "casos" as const },
-  { href: "/qtc",   label: "QTC",   icon: IconRadio,        countKey: "qtc"   as const },
+const NAV: { href: string; label: string; icon: () => React.ReactElement; countKey?: "alvos" | "casos" | "qtc" }[] = [
+  { href: "/dashboard", label: "Visão Geral", icon: IconDashboard },
+  { href: "/alvos",     label: "Alvos",       icon: IconTarget,       countKey: "alvos" },
+  { href: "/casos",     label: "Casos",       icon: IconFolderSearch, countKey: "casos" },
+  { href: "/qtc",       label: "QTC",         icon: IconRadio,        countKey: "qtc"   },
 ];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {
@@ -228,7 +240,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
         <nav style={{ flex: 1, padding: "8px 0", display: "flex", flexDirection: "column", gap: 1 }}>
           {NAV.map(({ href, label, icon: Icon, countKey }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
-            const count  = counts[countKey];
+            const count  = countKey ? counts[countKey] : null;
             return (
               <Link
                 key={href}
@@ -237,7 +249,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
               >
                 <Icon />
                 <span style={{ flex: 1 }}>{label}</span>
-                {count !== null && <span className="nav-count">{count}</span>}
+                {countKey && count !== null && <span className="nav-count">{count}</span>}
               </Link>
             );
           })}
