@@ -61,6 +61,18 @@ function IconRadio() {
   );
 }
 
+function IconFileText() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10 9 9 9 8 9"/>
+    </svg>
+  );
+}
+
 function IconMenu() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -90,11 +102,12 @@ function IconLogOut() {
   );
 }
 
-const NAV: { href: string; label: string; icon: () => React.ReactElement; countKey?: "alvos" | "casos" | "qtc" }[] = [
-  { href: "/dashboard", label: "Visão Geral", icon: IconDashboard },
-  { href: "/alvos",     label: "Alvos",       icon: IconTarget,       countKey: "alvos" },
-  { href: "/casos",     label: "Casos",       icon: IconFolderSearch, countKey: "casos" },
-  { href: "/qtc",       label: "QTC",         icon: IconRadio,        countKey: "qtc"   },
+const NAV: { href: string; label: string; icon: () => React.ReactElement; countKey?: "alvos" | "casos" | "qtc" | "relatorios" }[] = [
+  { href: "/dashboard",  label: "Visão Geral", icon: IconDashboard },
+  { href: "/alvos",      label: "Alvos",       icon: IconTarget,       countKey: "alvos" },
+  { href: "/casos",      label: "Casos",       icon: IconFolderSearch, countKey: "casos" },
+  { href: "/qtc",        label: "QTC",         icon: IconRadio,        countKey: "qtc"   },
+  { href: "/relatorios", label: "Relatórios",  icon: IconFileText,     countKey: "relatorios" },
 ];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {
@@ -104,7 +117,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole]               = useState<DefenseRole | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null; qtc: number | null }>({ alvos: null, casos: null, qtc: null });
+  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null; qtc: number | null; relatorios: number | null }>({ alvos: null, casos: null, qtc: null, relatorios: null });
 
   useEffect(() => {
     return auth.onAuthStateChanged(async (user) => {
@@ -140,8 +153,8 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
         const token = await getToken();
         const res = await fetch("/api/defense/counts", { headers: { Authorization: `Bearer ${token}` } });
         if (cancelled || !res.ok) return;
-        const data = await res.json() as { alvos: number; casos: number; qtc: number };
-        setCounts({ alvos: data.alvos, casos: data.casos, qtc: data.qtc });
+        const data = await res.json() as { alvos: number; casos: number; qtc: number; relatorios: number };
+        setCounts({ alvos: data.alvos, casos: data.casos, qtc: data.qtc, relatorios: data.relatorios });
       } catch { /* mantém contagem anterior */ }
     })();
     return () => { cancelled = true; };
