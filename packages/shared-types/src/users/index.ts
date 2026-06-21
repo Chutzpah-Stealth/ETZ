@@ -41,7 +41,7 @@ export interface AuditLog {
   uid: string;
   userEmail: string;
   action: string;
-  targetType: "user" | "institution" | "unit" | "target" | "case";
+  targetType: "user" | "institution" | "unit" | "target" | "case" | "qtc";
   targetId: string;
   details: Record<string, unknown>;
   timestamp: string;

@@ -38,6 +38,18 @@ function IconFolderSearch() {
   );
 }
 
+function IconRadio() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+      <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+      <circle cx="12" cy="12" r="2"/>
+      <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+      <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+    </svg>
+  );
+}
+
 function IconMenu() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -70,6 +82,7 @@ function IconLogOut() {
 const NAV = [
   { href: "/alvos", label: "Alvos", icon: IconTarget,       countKey: "alvos" as const },
   { href: "/casos", label: "Casos", icon: IconFolderSearch, countKey: "casos" as const },
+  { href: "/qtc",   label: "QTC",   icon: IconRadio,        countKey: "qtc"   as const },
 ];
 
 export default function DefenseLayout({ children }: { children: React.ReactNode }) {
@@ -79,7 +92,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole]               = useState<DefenseRole | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null }>({ alvos: null, casos: null });
+  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null; qtc: number | null }>({ alvos: null, casos: null, qtc: null });
 
   useEffect(() => {
     return auth.onAuthStateChanged(async (user) => {
@@ -115,8 +128,8 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
         const token = await getToken();
         const res = await fetch("/api/defense/counts", { headers: { Authorization: `Bearer ${token}` } });
         if (cancelled || !res.ok) return;
-        const data = await res.json() as { alvos: number; casos: number };
-        setCounts({ alvos: data.alvos, casos: data.casos });
+        const data = await res.json() as { alvos: number; casos: number; qtc: number };
+        setCounts({ alvos: data.alvos, casos: data.casos, qtc: data.qtc });
       } catch { /* mantém contagem anterior */ }
     })();
     return () => { cancelled = true; };
