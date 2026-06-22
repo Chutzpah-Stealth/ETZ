@@ -23,6 +23,8 @@ export default function InstituicoesPage() {
     if (res.ok) setInstitutions(await res.json());
   }, []);
 
+  // Carga inicial da lista (recarregada após criar/excluir instituições e unidades).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData(); }, [loadData]);
 
   async function handleCreateInstitution(e: React.FormEvent) {

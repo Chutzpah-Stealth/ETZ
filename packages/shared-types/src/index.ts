@@ -3,3 +3,4 @@ export * from "./targets";
 export * from "./cases";
 export * from "./qtc";
 export * from "./reports";
+export * from "./dashboard";

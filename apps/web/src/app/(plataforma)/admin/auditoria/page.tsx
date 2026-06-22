@@ -26,6 +26,8 @@ export default function AuditoriaPage() {
     setLoading(false);
   }
 
+  // Carga inicial paginada por cursor (startAfter) — não cabe useAuthedFetch; roda 1× no mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadMore(); }, []);
 
   return (

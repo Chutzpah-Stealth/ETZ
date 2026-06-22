@@ -110,10 +110,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   }, [router]);
 
-  useEffect(() => {
-    if (window.innerWidth < 1024) setSidebarOpen(false);
-  }, [pathname]);
-
   async function handleSignOut() {
     await signOut();
     router.replace("/login");
@@ -193,6 +189,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={href}
                 href={href}
                 className={`admin-nav-link${active ? " active" : ""}`}
+                onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
               >
                 <Icon />
                 {label}

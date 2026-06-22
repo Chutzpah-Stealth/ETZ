@@ -57,6 +57,8 @@ export function useAuthedFetch<T>(url: string | null, opts: Options<T>): Result<
   }, [url]);
 
   useEffect(() => {
+    // url === null = busca desabilitada → encerra o loading; o refetch é assíncrono
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (url === null) { setLoading(false); return; }
     refetch();
   }, [refetch, url]);

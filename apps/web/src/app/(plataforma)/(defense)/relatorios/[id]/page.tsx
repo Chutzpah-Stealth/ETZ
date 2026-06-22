@@ -41,7 +41,7 @@ export default function RelatorioDetailPage({ params }: RouteParams) {
     });
   }
 
-  const { data: report, setData: setReport, loading, refetch: reloadReport } = useAuthedFetch<Report | null>(
+  const { data: report, setData: setReport, loading } = useAuthedFetch<Report | null>(
     `/api/defense/reports/${id}`,
     { initial: null, onSuccess: r => { if (r) populate(r); }, onError: () => router.replace("/relatorios") },
   );
@@ -53,6 +53,8 @@ export default function RelatorioDetailPage({ params }: RouteParams) {
   });
 
   useEffect(() => {
+    // reset síncrono ao desvincular o caso; o carregamento abaixo é assíncrono (pós-await)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!report?.caseId) { setCaseData(null); setCaseLabel(null); return; }
     let active = true;
     (async () => {

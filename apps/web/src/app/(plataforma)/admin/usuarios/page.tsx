@@ -55,6 +55,8 @@ export default function UsuariosPage() {
     setUnits(unitsMap);
   }, []);
 
+  // Carga inicial (usuários + instituições/unidades); recarregada após criar/editar/excluir.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadData(); }, [loadData]);
 
   async function handleCreate(e: React.FormEvent) {
