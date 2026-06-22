@@ -2,22 +2,11 @@
 
 import Link from "next/link";
 import { useAuthedFetch } from "../../../../lib/useAuthedFetch";
-import type { RiskLevel } from "@etz/shared-types";
+import type { DashboardData } from "@etz/shared-types";
 import {
   RISK_LEVEL_LABEL, TARGET_STATUS_LABEL, CASE_STATUS_LABEL, QTC_CATEGORY_LABEL,
 } from "@etz/shared-types";
-
-interface DashboardData {
-  kpis: { alvos: number; altoRisco: number; casosAndamento: number; qtc7d: number };
-  distRisco:        Record<string, number>;
-  distStatusAlvo:   Record<string, number>;
-  distStatusCaso:   Record<string, number>;
-  distCategoriaQtc: Record<string, number>;
-  foragidos:        { id: string; fullName: string; cpf: string | null; riskLevel: RiskLevel | null }[];
-  altoRiscoSemCaso: { id: string; fullName: string; cpf: string | null; riskLevel: RiskLevel | null }[];
-  casosParados:     { id: string; name: string; updatedAt: string }[];
-  atividade:        { type: "alvo" | "caso" | "qtc"; id: string; label: string; who: string; at: string }[];
-}
+import { RiskTag } from "../_components/badges";
 
 const RISK_COLOR: Record<string, string> = {
   baixo: "#1f8a52", medio: "#b5740d", alto: "#c4392f", critico: "#8e1f1a", semRisco: "#aeb4bf",
@@ -79,16 +68,6 @@ function KpiCard({ label, value, accent }: { label: string; value: number; accen
   );
 }
 
-function RiskTag({ level }: { level: RiskLevel | null }) {
-  if (!level) return <span style={{ fontSize: 11, color: "var(--ink-300)" }}>—</span>;
-  const c = RISK_COLOR[level] ?? NEUTRAL;
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.07em", color: c, padding: "2px 7px", borderRadius: "var(--r-full)", background: `${c}1a` }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: c }} />{RISK_LEVEL_LABEL[level]}
-    </span>
-  );
-}
-
 function InsightCard({ title, empty, children }: { title: string; empty: boolean; children: React.ReactNode }) {
   return (
     <div className="form-section" style={{ gap: 10 }}>
@@ -123,6 +102,7 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
         <KpiCard label="Alvos" value={kpis.alvos} />
         <KpiCard label="Alto / Crítico risco" value={kpis.altoRisco} accent />
+        <KpiCard label="Mandados ativos" value={kpis.mandadosAtivos} accent />
         <KpiCard label="Casos em andamento" value={kpis.casosAndamento} />
         <KpiCard label="QTCs (7 dias)" value={kpis.qtc7d} />
       </div>
@@ -133,6 +113,23 @@ export default function DashboardPage() {
         <Bars title="Alvos por status"     data={data.distStatusAlvo}   order={STATUS_ORDER} labels={TARGET_STATUS_LABEL} color={NEUTRAL}    fallbackLabel="Sem status" />
         <Bars title="Casos por status"     data={data.distStatusCaso}   order={CASE_ORDER}   labels={CASE_STATUS_LABEL}  color={ACCENT}     fallbackLabel="—" />
         <Bars title="QTCs por categoria"   data={data.distCategoriaQtc} order={QTC_ORDER}    labels={QTC_CATEGORY_LABEL}  color={ACCENT}     fallbackLabel="—" />
+
+        <InsightCard title="Mandados de prisão ativos" empty={data.comMandado.length === 0}>
+          {data.comMandado.map(t => (
+            <Link key={t.id} href={`/alvos/${t.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
+              <span style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-800)", fontFamily: "var(--font-ui)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.fullName}</span>
+                <span style={{ fontSize: 11, color: "var(--danger)", fontFamily: "var(--font-mono)" }}>
+                  Mandado {t.warrantNumber}{t.warrantsCount > 1 ? ` +${t.warrantsCount - 1}` : ""}
+                </span>
+              </span>
+              <RiskTag level={t.riskLevel} />
+            </Link>
+          ))}
+          <Link href="/mandados" style={{ fontSize: 12, color: "var(--accent)", fontFamily: "var(--font-ui)", textDecoration: "none", paddingTop: 2 }}>
+            Ver todos os mandados →
+          </Link>
+        </InsightCard>
       </div>
 
       {/* Insights acionáveis */}

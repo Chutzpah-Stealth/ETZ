@@ -2,24 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { adminDb } from "../../../../lib/firebase-admin";
 import { verifyDefenseUser } from "../../../../lib/defense-guard";
-import type { Target, Case, QtcEntry, RiskLevel, TargetStatus, CaseStatus, QtcCategory } from "@etz/shared-types";
+import type { Target, Case, QtcEntry, RiskLevel, DashboardData } from "@etz/shared-types";
 
 const STALE_DAYS = 14;
 const RECENT_QTC_DAYS = 7;
 const ACTIVITY_LIMIT = 8;
 const LIST_LIMIT = 6;
-
-interface DashboardData {
-  kpis: { alvos: number; altoRisco: number; casosAndamento: number; qtc7d: number };
-  distRisco:        Record<string, number>;
-  distStatusAlvo:   Record<string, number>;
-  distStatusCaso:   Record<string, number>;
-  distCategoriaQtc: Record<string, number>;
-  foragidos:        { id: string; fullName: string; cpf: string | null; riskLevel: RiskLevel | null }[];
-  altoRiscoSemCaso: { id: string; fullName: string; cpf: string | null; riskLevel: RiskLevel | null }[];
-  casosParados:     { id: string; name: string; updatedAt: string }[];
-  atividade:        { type: "alvo" | "caso" | "qtc"; id: string; label: string; who: string; at: string }[];
-}
 
 async function computeDashboard(unitId: string): Promise<DashboardData> {
   // sem orderBy → uma só igualdade por query → não exige índice composto novo
@@ -61,6 +49,23 @@ async function computeDashboard(unitId: string): Promise<DashboardData> {
 
   const foragidos = targets.filter(t => t.status === "foragido").slice(0, LIST_LIMIT).map(toLite);
   const altoRiscoSemCaso = targets.filter(t => isHigh(t.riskLevel) && !referenced.has(t.id)).slice(0, LIST_LIMIT).map(toLite);
+
+  // Mandados de prisão ativos — computados dos alvos já carregados (sem leitura extra)
+  const withWarrants = targets.filter(t => Array.isArray(t.warrants) && t.warrants.length > 0);
+  const riskRank: Record<string, number> = { critico: 0, alto: 1, medio: 2, baixo: 3 };
+  const comMandado = [...withWarrants]
+    .sort((a, b) => {
+      const af = a.status === "foragido" ? 0 : 1;
+      const bf = b.status === "foragido" ? 0 : 1;
+      if (af !== bf) return af - bf;
+      return (riskRank[a.riskLevel ?? ""] ?? 4) - (riskRank[b.riskLevel ?? ""] ?? 4);
+    })
+    .slice(0, LIST_LIMIT)
+    .map(t => ({
+      id: t.id, fullName: t.fullName,
+      status: t.status ?? null, riskLevel: t.riskLevel ?? null,
+      warrantNumber: t.warrants[0].number, warrantsCount: t.warrants.length,
+    }));
   const casosParados = cases
     .filter(c => c.status === "em_andamento" && c.updatedAt < staleCutoff)
     .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt))
@@ -79,9 +84,10 @@ async function computeDashboard(unitId: string): Promise<DashboardData> {
       altoRisco:      targets.filter(t => isHigh(t.riskLevel)).length,
       casosAndamento: cases.filter(c => c.status === "em_andamento").length,
       qtc7d:          qtc.filter(q => q.createdAt >= qtcCutoff).length,
+      mandadosAtivos: withWarrants.reduce((n, t) => n + t.warrants.length, 0),
     },
     distRisco, distStatusAlvo, distStatusCaso, distCategoriaQtc,
-    foragidos, altoRiscoSemCaso, casosParados, atividade,
+    foragidos, altoRiscoSemCaso, comMandado, casosParados, atividade,
   };
 }
 

@@ -61,6 +61,18 @@ function IconRadio() {
   );
 }
 
+function IconGavel() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/>
+      <path d="m16 16 6-6"/>
+      <path d="m8 8 6-6"/>
+      <path d="m9 7 8 8"/>
+      <path d="m21 11-8-8"/>
+    </svg>
+  );
+}
+
 function IconFileText() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -102,9 +114,10 @@ function IconLogOut() {
   );
 }
 
-const NAV: { href: string; label: string; icon: () => React.ReactElement; countKey?: "alvos" | "casos" | "qtc" | "relatorios" }[] = [
+const NAV: { href: string; label: string; icon: () => React.ReactElement; countKey?: "alvos" | "casos" | "qtc" | "relatorios" | "mandados" }[] = [
   { href: "/dashboard",  label: "Visão Geral", icon: IconDashboard },
   { href: "/alvos",      label: "Alvos",       icon: IconTarget,       countKey: "alvos" },
+  { href: "/mandados",   label: "Mandados",    icon: IconGavel,        countKey: "mandados" },
   { href: "/casos",      label: "Casos",       icon: IconFolderSearch, countKey: "casos" },
   { href: "/qtc",        label: "QTC",         icon: IconRadio,        countKey: "qtc"   },
   { href: "/relatorios", label: "Relatórios",  icon: IconFileText,     countKey: "relatorios" },
@@ -117,7 +130,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [role, setRole]               = useState<DefenseRole | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null; qtc: number | null; relatorios: number | null }>({ alvos: null, casos: null, qtc: null, relatorios: null });
+  const [counts, setCounts] = useState<{ alvos: number | null; casos: number | null; qtc: number | null; relatorios: number | null; mandados: number | null }>({ alvos: null, casos: null, qtc: null, relatorios: null, mandados: null });
 
   useEffect(() => {
     return auth.onAuthStateChanged(async (user) => {
@@ -140,10 +153,6 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
     });
   }, [router]);
 
-  useEffect(() => {
-    if (window.innerWidth < 1024) setSidebarOpen(false);
-  }, [pathname]);
-
   // Contagem de alvos e casos da unidade via agregação count() (~2 leituras) — recarrega ao navegar
   useEffect(() => {
     if (!ready) return;
@@ -153,8 +162,8 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
         const token = await getToken();
         const res = await fetch("/api/defense/counts", { headers: { Authorization: `Bearer ${token}` } });
         if (cancelled || !res.ok) return;
-        const data = await res.json() as { alvos: number; casos: number; qtc: number; relatorios: number };
-        setCounts({ alvos: data.alvos, casos: data.casos, qtc: data.qtc, relatorios: data.relatorios });
+        const data = await res.json() as { alvos: number; casos: number; qtc: number; relatorios: number; mandados: number };
+        setCounts({ alvos: data.alvos, casos: data.casos, qtc: data.qtc, relatorios: data.relatorios, mandados: data.mandados });
       } catch { /* mantém contagem anterior */ }
     })();
     return () => { cancelled = true; };
@@ -259,6 +268,7 @@ export default function DefenseLayout({ children }: { children: React.ReactNode 
                 key={href}
                 href={href}
                 className={`defense-nav-link${active ? " active" : ""}`}
+                onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
               >
                 <Icon />
                 <span style={{ flex: 1 }}>{label}</span>
