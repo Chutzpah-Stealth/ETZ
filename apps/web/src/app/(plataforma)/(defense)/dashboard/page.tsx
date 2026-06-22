@@ -86,7 +86,18 @@ export default function DashboardPage() {
     return <div style={{ padding: 48, textAlign: "center", color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Carregando…</div>;
   }
 
-  const { kpis } = data;
+  // Defaults defensivos: o payload pode chegar parcial (ex.: Data Cache servindo
+  // um formato antigo logo após um deploy que mudou o shape). Evita crash de .length/.map.
+  const kpis = data.kpis ?? { alvos: 0, altoRisco: 0, casosAndamento: 0, qtc7d: 0, mandadosAtivos: 0 };
+  const distRisco        = data.distRisco        ?? {};
+  const distStatusAlvo   = data.distStatusAlvo   ?? {};
+  const distStatusCaso   = data.distStatusCaso   ?? {};
+  const distCategoriaQtc = data.distCategoriaQtc ?? {};
+  const foragidos        = data.foragidos        ?? [];
+  const altoRiscoSemCaso = data.altoRiscoSemCaso ?? [];
+  const comMandado       = data.comMandado       ?? [];
+  const casosParados     = data.casosParados     ?? [];
+  const atividade        = data.atividade        ?? [];
 
   return (
     <div style={{ maxWidth: 1100, width: "100%", display: "flex", flexDirection: "column", gap: 20 }}>
@@ -109,13 +120,13 @@ export default function DashboardPage() {
 
       {/* Distribuições */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <Bars title="Alvos por risco"      data={data.distRisco}        order={RISK_ORDER}   labels={RISK_LEVEL_LABEL}   color={RISK_COLOR} fallbackLabel="Sem risco" />
-        <Bars title="Alvos por status"     data={data.distStatusAlvo}   order={STATUS_ORDER} labels={TARGET_STATUS_LABEL} color={NEUTRAL}    fallbackLabel="Sem status" />
-        <Bars title="Casos por status"     data={data.distStatusCaso}   order={CASE_ORDER}   labels={CASE_STATUS_LABEL}  color={ACCENT}     fallbackLabel="—" />
-        <Bars title="QTCs por categoria"   data={data.distCategoriaQtc} order={QTC_ORDER}    labels={QTC_CATEGORY_LABEL}  color={ACCENT}     fallbackLabel="—" />
+        <Bars title="Alvos por risco"      data={distRisco}        order={RISK_ORDER}   labels={RISK_LEVEL_LABEL}   color={RISK_COLOR} fallbackLabel="Sem risco" />
+        <Bars title="Alvos por status"     data={distStatusAlvo}   order={STATUS_ORDER} labels={TARGET_STATUS_LABEL} color={NEUTRAL}    fallbackLabel="Sem status" />
+        <Bars title="Casos por status"     data={distStatusCaso}   order={CASE_ORDER}   labels={CASE_STATUS_LABEL}  color={ACCENT}     fallbackLabel="—" />
+        <Bars title="QTCs por categoria"   data={distCategoriaQtc} order={QTC_ORDER}    labels={QTC_CATEGORY_LABEL}  color={ACCENT}     fallbackLabel="—" />
 
-        <InsightCard title="Mandados de prisão ativos" empty={data.comMandado.length === 0}>
-          {data.comMandado.map(t => (
+        <InsightCard title="Mandados de prisão ativos" empty={comMandado.length === 0}>
+          {comMandado.map(t => (
             <Link key={t.id} href={`/alvos/${t.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ minWidth: 0, flex: 1 }}>
                 <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-800)", fontFamily: "var(--font-ui)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.fullName}</span>
@@ -134,8 +145,8 @@ export default function DashboardPage() {
 
       {/* Insights acionáveis */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        <InsightCard title="Foragidos" empty={data.foragidos.length === 0}>
-          {data.foragidos.map(t => (
+        <InsightCard title="Foragidos" empty={foragidos.length === 0}>
+          {foragidos.map(t => (
             <Link key={t.id} href={`/alvos/${t.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-800)", fontFamily: "var(--font-ui)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.fullName}</span>
               <RiskTag level={t.riskLevel} />
@@ -143,8 +154,8 @@ export default function DashboardPage() {
           ))}
         </InsightCard>
 
-        <InsightCard title="Alto risco sem caso" empty={data.altoRiscoSemCaso.length === 0}>
-          {data.altoRiscoSemCaso.map(t => (
+        <InsightCard title="Alto risco sem caso" empty={altoRiscoSemCaso.length === 0}>
+          {altoRiscoSemCaso.map(t => (
             <Link key={t.id} href={`/alvos/${t.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-800)", fontFamily: "var(--font-ui)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.fullName}</span>
               <RiskTag level={t.riskLevel} />
@@ -152,8 +163,8 @@ export default function DashboardPage() {
           ))}
         </InsightCard>
 
-        <InsightCard title="Casos parados (+14 dias)" empty={data.casosParados.length === 0}>
-          {data.casosParados.map(c => (
+        <InsightCard title="Casos parados (+14 dias)" empty={casosParados.length === 0}>
+          {casosParados.map(c => (
             <Link key={c.id} href={`/casos/${c.id}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, textDecoration: "none", padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
               <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-800)", fontFamily: "var(--font-ui)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
               <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ink-400)", whiteSpace: "nowrap", flexShrink: 0 }}>{new Date(c.updatedAt).toLocaleDateString("pt-BR")}</span>
@@ -165,15 +176,15 @@ export default function DashboardPage() {
       {/* Atividade recente */}
       <div className="form-section" style={{ gap: 10 }}>
         <p className="form-section-title" style={{ marginBottom: 4 }}>Atividade recente</p>
-        {data.atividade.length === 0 ? (
+        {atividade.length === 0 ? (
           <p style={{ fontSize: 13, color: "var(--ink-400)", fontFamily: "var(--font-ui)" }}>Nenhuma atividade ainda.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {data.atividade.map((a, i) => {
+            {atividade.map((a, i) => {
               const href = a.type === "caso" ? `/casos/${a.id}` : a.type === "alvo" ? `/alvos/${a.id}` : "/qtc";
               const tag = a.type === "alvo" ? "Alvo" : a.type === "caso" ? "Caso" : "QTC";
               return (
-                <Link key={`${a.type}-${a.id}-${i}`} href={href} style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", gap: 10, alignItems: "center", textDecoration: "none", padding: "10px 0", borderBottom: i < data.atividade.length - 1 ? "1px solid var(--line)" : "none" }}>
+                <Link key={`${a.type}-${a.id}-${i}`} href={href} style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", gap: 10, alignItems: "center", textDecoration: "none", padding: "10px 0", borderBottom: i < atividade.length - 1 ? "1px solid var(--line)" : "none" }}>
                   <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--accent)", background: "var(--accent-tint)", padding: "2px 6px", borderRadius: "var(--r-sm)", textAlign: "center" }}>{tag}</span>
                   <span style={{ minWidth: 0 }}>
                     <span style={{ fontSize: 13, color: "var(--ink-800)", fontFamily: "var(--font-ui)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
